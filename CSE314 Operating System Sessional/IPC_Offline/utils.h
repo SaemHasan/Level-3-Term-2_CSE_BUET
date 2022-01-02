@@ -11,7 +11,7 @@
 #include <ctime>
 #include <chrono>
 
-#define MAX_NUMBER_THREAD 10000
+#define MAX_NUMBER_THREAD 1000
 
 using namespace std;
 using namespace chrono;
@@ -22,6 +22,16 @@ poisson_distribution<int> distribution(6.5);
 //semaphores
 sem_t mKiosk;
 sem_t *securityBelts;
+
+//mutex
+pthread_mutex_t boardingPass;
+pthread_mutex_t printMtx;
+pthread_mutex_t vipCountMtx;
+pthread_mutex_t right_left_Mtx;
+pthread_mutex_t left_right_Mtx;
+pthread_mutex_t specialKioskMtx;
+
+//semaphores for queue
 sem_t passengerQueueCount;
 sem_t securityQueueCount;
 sem_t boardingQueueCount;
@@ -29,19 +39,13 @@ sem_t vipQueueCount;
 sem_t lostQueueCount;
 sem_t specialkioskQueueCount;
 
-//mutex
-pthread_mutex_t boardingPass;
+//mutex for queue
 pthread_mutex_t passengerQueueMtx;
 pthread_mutex_t securityQueueMtx;
 pthread_mutex_t boardingQueueMtx;
-pthread_mutex_t printMtx;
-pthread_mutex_t vipQueueMtx;
-pthread_mutex_t vipCountMtx;
-pthread_mutex_t right_left_Mtx;
-pthread_mutex_t left_right_Mtx;
 pthread_mutex_t lostQueueMtx;
+pthread_mutex_t vipQueueMtx;
 pthread_mutex_t specialKioskQueueMtx;
-pthread_mutex_t specialKioskMtx;
 
 //queue
 queue<Passenger> passengerQueue;
@@ -65,6 +69,7 @@ void initSemaphore(int m, int n, int p)
     sem_init(&mKiosk, 0, m);
     for (int i = 0; i < n; i++)
         sem_init(&securityBelts[i], 0, p);
+
     sem_init(&passengerQueueCount, 0, 0);
     sem_init(&securityQueueCount, 0, 0);
     sem_init(&boardingQueueCount, 0, 0);

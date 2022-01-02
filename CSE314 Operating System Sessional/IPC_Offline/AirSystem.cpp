@@ -54,6 +54,7 @@ void *special_kiosk(void *arg)
 
     lock(specialKioskMtx);
     PRINT(p.pid, "started check in ", "special kiosk", 0);
+    sleep(w);
     PRINT(p.pid, "got boarding pass", "special kiosk", 0);
     unlock(specialKioskMtx);
 
@@ -82,7 +83,7 @@ void *returnUsingVipChannel(void *arg)
 
     PRINT(p.pid, "started waiting to be returned", "VIP Channel", 0);
 
-    //asha kori thik ase
+    //
     lock(right_left_Mtx);
     unlock(right_left_Mtx);
 
@@ -117,7 +118,7 @@ void *vipChannel(void *arg)
 
     PRINT(p.pid, "started waiting", "VIP Channel", 0);
 
-    lock(left_right_Mtx);
+    lock(left_right_Mtx); //can be locked in return vip channel
     unlock(left_right_Mtx);
 
     lock(vipCountMtx);
@@ -159,7 +160,7 @@ void *securityCheck(void *arg)
     securityQueue.pop();
     unlock(securityQueueMtx);
 
-    int beltNum = rand() % n;
+    int beltNum = rand() % n; // randomly select security belt
     PRINT(p.pid, "started waiting for security check", "belt " + to_string(beltNum + 1), 0);
 
     semDecrease(securityBelts[beltNum]);
@@ -236,13 +237,11 @@ void *addPassengerToQueue(void *pid)
     int *num = (int *)pid;
     //cout<<"num : "<<*num<<endl;
     Passenger p = Passenger(*num);
-    p.setVIP(isVIPassign());
+    p.setVIP(isVIPassign()); // randomly assigning vip passenger
 
     lock(passengerQueueMtx); //locking queue
     passengerQueue.push(p);
-
     PRINT(p.pid, "arrived", "the airport", 0);
-
     unlock(passengerQueueMtx); //unlocking queue
 
     semIncrease(passengerQueueCount); //increasing passenger count in queue
@@ -255,8 +254,8 @@ void *addPassengerToQueue(void *pid)
 int main()
 {
     srand(time(0));
-    freopen("input.txt", "r", stdin); //input from file
-    freopen("output.txt", "w", stdout);
+    freopen("input.txt", "r", stdin);   //input from file
+    freopen("output.txt", "w", stdout); //output to file
 
     pthread_t threads[MAX_NUMBER_THREAD];
     int threadCount = 0;
@@ -265,14 +264,14 @@ int main()
 
     cin >> m >> n >> p; //reading m,n,p
     cout << "Number of kiosks : " << m << endl;
-    cout << "Number of Security Belts : " << n << ".\t Passenger per belt: " << p << endl;
+    cout << "Number of Security Belts : " << n << "\t Passenger per belt: " << p << endl;
 
     cin >> w >> x >> y >> z; //reading w, x, y, z
 
     initSemaphore(m, n, p); //initializing semaphores
-    initMutex();            //initialize mutex
+    initMutex();            //initialize mutexes
 
-    start = high_resolution_clock::now();
+    start = high_resolution_clock::now(); //start clock for timing info
 
     while (1)
     {
