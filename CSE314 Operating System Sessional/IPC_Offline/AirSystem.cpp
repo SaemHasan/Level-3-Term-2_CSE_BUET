@@ -39,6 +39,8 @@ void *boarding(void *arg)
         pthread_create(&thread1, NULL, returnUsingVipChannel, (void *)"Returning for Boarding Pass at special kiosk");
         pthread_join(thread1, NULL);
     }
+
+    return 0;
 }
 
 void *special_kiosk(void *arg)
@@ -50,12 +52,12 @@ void *special_kiosk(void *arg)
     specialKioskQueue.pop();
     unlock(specialKioskQueueMtx);
 
-    PRINT(p.pid, "started waiting for boarding pass", "special kiosk", 0);
+    PRINT(p.pid, "(who lost pass) started waiting for boarding pass", "special kiosk", 0);
 
     lock(specialKioskMtx);
-    PRINT(p.pid, "started check in ", "special kiosk", 0);
+    PRINT(p.pid, "(who lost pass) started check in ", "special kiosk", 0);
     sleep(w);
-    PRINT(p.pid, "got boarding pass", "special kiosk", 0);
+    PRINT(p.pid, "(who lost pass) got boarding pass", "special kiosk", 0);
     unlock(specialKioskMtx);
 
     //add to vip queue
@@ -67,6 +69,8 @@ void *special_kiosk(void *arg)
     pthread_t thread1;
     pthread_create(&thread1, NULL, vipChannel, (void *)"VIP Channel entered");
     pthread_join(thread1, NULL);
+
+    return 0;
 }
 
 void *returnUsingVipChannel(void *arg)
@@ -81,16 +85,16 @@ void *returnUsingVipChannel(void *arg)
 
     p.hasLostPass = false;
 
-    PRINT(p.pid, "started waiting to be returned", "VIP Channel", 0);
+    PRINT(p.pid, "(who lost pass) started waiting to be returned", "VIP Channel", 0);
 
     //
     lock(right_left_Mtx);
     unlock(right_left_Mtx);
 
     lock(left_right_Mtx);
-    PRINT(p.pid, "started walking for boarding pass", "VIP Channel", 0);
+    PRINT(p.pid, "(who lost pass) started walking for boarding pass", "VIP Channel", 0);
     sleep(z);
-    PRINT(p.pid, "crossed the VIP channel  & returned for boarding pass", "special kiosk", 0);
+    PRINT(p.pid, "(who lost pass) crossed the VIP channel  & returned for boarding pass", "special kiosk", 0);
     unlock(left_right_Mtx);
 
     //add to special kiosk queue
@@ -103,6 +107,8 @@ void *returnUsingVipChannel(void *arg)
     pthread_t thread1;
     pthread_create(&thread1, NULL, special_kiosk, (void *)"Special Kiosk");
     pthread_join(thread1, NULL);
+
+    return 0;
 }
 
 //left to right(preference)
@@ -147,6 +153,8 @@ void *vipChannel(void *arg)
     pthread_t thread1;
     pthread_create(&thread1, NULL, boarding, (void *)"Boarding check");
     pthread_join(thread1, NULL);
+
+    return 0;
 }
 
 //here in security check
@@ -179,6 +187,8 @@ void *securityCheck(void *arg)
     pthread_t thread1;
     pthread_create(&thread1, NULL, boarding, (void *)"Boarding check");
     pthread_join(thread1, NULL);
+
+    return 0;
 }
 
 //checking at kiosk
@@ -221,6 +231,8 @@ void *check_in_at_kiosk(void *arg)
         pthread_create(&thread1, NULL, vipChannel, (void *)"VIP Channel entered");
     }
     pthread_join(thread1, NULL);
+
+    return 0;
 }
 
 void check_in()
