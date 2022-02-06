@@ -41,6 +41,18 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("ThirdScriptExample");
 
+double SIMULATION_TIME = 10.0; // s
+uint32_t NUMOFNODES = 5;
+uint32_t WIRED_BANDWIDTH = 100;    // Mbps
+uint32_t WIRED_DELAY = 30;         // ms
+uint32_t BOTTLENECKBANDWIDTH = 10; // Mbps
+uint32_t BOTTLENECKDELAY = 10;     // ms
+uint32_t WIRELESS_BANDWIDTH = 5;   // Mbps
+uint32_t PACKET_SIZE = 1000;       // Bytes
+float WIRELESS_DELAY = 0.01;       // ms
+uint16_t port = 50000;
+uint32_t maxBytes = PACKET_SIZE;
+
 uint32_t prev = 0;
 Time prevTime = Seconds(0);
 
@@ -61,15 +73,15 @@ void printFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor)
         std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
         std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
         std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
-        std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / 10.0 / 1000 << " kbps\n";
+        std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / SIMULATION_TIME / 1000 << " kbps\n";
         std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
         std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
-        std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / 10.0 / 1000 << " kbps\n";
+        std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / SIMULATION_TIME / 1000 << " kbps\n";
 
         SentPackets = SentPackets + (i->second.txPackets);
         ReceivedPackets = ReceivedPackets + (i->second.rxPackets);
         LostPackets = LostPackets + (i->second.txPackets - i->second.rxPackets);
-        throughPut += (i->second.rxBytes * 8.0 / 10.0 / 1000);
+        throughPut += (i->second.rxBytes * 8.0 / SIMULATION_TIME / 1000);
 
         j++;
     }
@@ -85,48 +97,6 @@ void printFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor)
     NS_LOG_UNCOND("Total Flow id : " << j);
 }
 
-// void shFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor, std::string flow_file)
-// {
-//     AsciiTraceHelper ascii;
-//     static Ptr<OutputStreamWrapper> flowStream = ascii.CreateFileStream("tcp-nice-drop.dat");
-
-//     *flowStream->GetStream() << "Session DeliveryRatio LossRatio\n";
-//     uint32_t SentPackets = 0;
-//     uint32_t ReceivedPackets = 0;
-//     uint32_t LostPackets = 0;
-//     int j = 0;
-//     Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowmon->GetClassifier());
-//     std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats();
-
-//     for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator iter = stats.begin(); iter != stats.end(); ++iter)
-//     {
-//         Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(iter->first);
-
-//         NS_LOG_UNCOND("----Flow ID:" << iter->first);
-//         NS_LOG_UNCOND("Src Addr" << t.sourceAddress << "Dst Addr " << t.destinationAddress);
-//         NS_LOG_UNCOND("Sent Packets=" << iter->second.txPackets);
-//         NS_LOG_UNCOND("Received Packets =" << iter->second.rxPackets);
-//         NS_LOG_UNCOND("Lost Packets =" << iter->second.txPackets - iter->second.rxPackets);
-//         NS_LOG_UNCOND("Packet delivery ratio =" << iter->second.rxPackets * 100.0 / iter->second.txPackets << "%");
-//         NS_LOG_UNCOND("Packet loss ratio =" << (iter->second.txPackets - iter->second.rxPackets) * 100.0 / iter->second.txPackets << "%");
-
-//         *flowStream->GetStream() << t.sourceAddress << "-" << t.destinationAddress << " " << iter->second.rxPackets * 100.0 / iter->second.txPackets << " " << (iter->second.txPackets - iter->second.rxPackets) * 100.0 / iter->second.txPackets << "\n";
-
-//         SentPackets = SentPackets + (iter->second.txPackets);
-//         ReceivedPackets = ReceivedPackets + (iter->second.rxPackets);
-//         LostPackets = LostPackets + (iter->second.txPackets - iter->second.rxPackets);
-
-//         j++;
-//     }
-//     NS_LOG_UNCOND("--------Total Results of the simulation----------" << std::endl);
-//     NS_LOG_UNCOND("Total sent packets  =" << SentPackets);
-//     NS_LOG_UNCOND("Total Received Packets =" << ReceivedPackets);
-//     NS_LOG_UNCOND("Total Lost Packets =" << LostPackets);
-//     NS_LOG_UNCOND("Packet Loss ratio =" << ((LostPackets * 100.0) / SentPackets) << "%");
-//     NS_LOG_UNCOND("Packet delivery ratio =" << ((ReceivedPackets * 100.0) / SentPackets) << "%");
-//     NS_LOG_UNCOND("Total Flod id " << j);
-// }
-
 // Calculate throughput
 static void
 TraceThroughput(Ptr<FlowMonitor> monitor)
@@ -138,14 +108,14 @@ TraceThroughput(Ptr<FlowMonitor> monitor)
     thr << curTime.GetSeconds() << " " << 8 * (itr->second.txBytes - prev) / (1000 * (curTime.GetSeconds() - prevTime.GetSeconds())) << std::endl;
     prevTime = curTime;
     prev = itr->second.txBytes;
-    Simulator::Schedule(Seconds(0.2), &TraceThroughput, monitor);
+    Simulator::Schedule(Seconds(1), &TraceThroughput, monitor);
 }
 
 int main(int argc, char *argv[])
 {
     bool verbose = true;
-    uint32_t nCsma = 5;
-    uint32_t nWifi = 5;
+    uint32_t nCsma = NUMOFNODES;
+    uint32_t nWifi = NUMOFNODES;
     bool tracing = false;
 
     CommandLine cmd(__FILE__);
@@ -178,8 +148,8 @@ int main(int argc, char *argv[])
     p2pNodes.Create(2);
 
     PointToPointHelper pointToPoint;
-    pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
-    pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue(std::to_string(BOTTLENECKBANDWIDTH) + "Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue(std::to_string(BOTTLENECKDELAY) + "ms"));
 
     NetDeviceContainer p2pDevices;
     p2pDevices = pointToPoint.Install(p2pNodes);
@@ -189,8 +159,8 @@ int main(int argc, char *argv[])
     csmaNodes.Create(nCsma);
 
     CsmaHelper csma;
-    csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
-    csma.SetChannelAttribute("Delay", TimeValue(NanoSeconds(6560)));
+    csma.SetChannelAttribute("DataRate", StringValue(std::to_string(WIRED_BANDWIDTH) + "Mbps"));
+    csma.SetChannelAttribute("Delay", StringValue(std::to_string(WIRED_DELAY) + "ms"));
 
     NetDeviceContainer csmaDevices;
     csmaDevices = csma.Install(csmaNodes);
@@ -220,6 +190,15 @@ int main(int argc, char *argv[])
 
     NetDeviceContainer apDevices;
     apDevices = wifi.Install(phy, mac, wifiApNode);
+
+    Ptr<RateErrorModel> em = CreateObject<RateErrorModel>();
+    em->SetAttribute("ErrorRate", DoubleValue(.03));
+
+    // after wifi netdevices are created
+    for (uint32_t i = 1; i <= nWifi; i++)
+    {
+        Config::Set("/NodeList/" + std::to_string(i) + "/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/PostReceptionErrorModel", PointerValue(em));
+    }
 
     MobilityHelper mobility;
 
@@ -261,9 +240,6 @@ int main(int argc, char *argv[])
 
     // Simulator::Stop(Seconds(10.0));
 
-    uint16_t port = 50000;
-    uint32_t maxBytes = 1000;
-
     // BulkSendHelper source("ns3::TcpSocketFactory",
     //                       InetSocketAddress(staInterfaces.GetAddress(nWifi - 1), port));
     // // Set the amount of data to send in bytes.  Zero is unlimited.
@@ -289,16 +265,16 @@ int main(int argc, char *argv[])
         source.SetAttribute("MaxBytes", UintegerValue(maxBytes));
         ApplicationContainer sourceApps = source.Install(wifiStaNodes.Get(i));
         sourceApps.Start(Seconds(0.0));
-        sourceApps.Stop(Seconds(10.0));
+        sourceApps.Stop(Seconds(SIMULATION_TIME));
 
         //
-        // Create a PacketSinkApplication and install it on node 1
+        // Create a PacketSinkApplication and install it on node
         //
         PacketSinkHelper sink("ns3::TcpSocketFactory",
                               InetSocketAddress(Ipv4Address::GetAny(), port));
         ApplicationContainer sinkApps = sink.Install(csmaNodes.Get(i));
         sinkApps.Start(Seconds(0.0));
-        sinkApps.Stop(Seconds(10.0));
+        sinkApps.Stop(Seconds(SIMULATION_TIME));
     }
 
     for (uint16_t i = 0; i < nCsma; i++)
@@ -309,16 +285,16 @@ int main(int argc, char *argv[])
         source.SetAttribute("MaxBytes", UintegerValue(maxBytes));
         ApplicationContainer sourceApps = source.Install(csmaNodes.Get(i));
         sourceApps.Start(Seconds(0.0));
-        sourceApps.Stop(Seconds(10.0));
+        sourceApps.Stop(Seconds(SIMULATION_TIME));
 
         //
-        // Create a PacketSinkApplication and install it on node 1
+        // Create a PacketSinkApplication and install it on node
         //
         PacketSinkHelper sink("ns3::TcpSocketFactory",
                               InetSocketAddress(Ipv4Address::GetAny(), port));
         ApplicationContainer sinkApps = sink.Install(wifiStaNodes.Get(i));
         sinkApps.Start(Seconds(0.0));
-        sinkApps.Stop(Seconds(10.0));
+        sinkApps.Stop(Seconds(SIMULATION_TIME));
     }
 
     if (tracing)
@@ -335,7 +311,7 @@ int main(int argc, char *argv[])
 
     Simulator::Schedule(Seconds(0 + 0.000001), &TraceThroughput, monitor);
 
-    Simulator::Stop(Seconds(10.0));
+    Simulator::Stop(Seconds(SIMULATION_TIME));
     Simulator::Run();
 
     flowmon.SerializeToXmlFile("mytest.flowmonitor", true, true);
