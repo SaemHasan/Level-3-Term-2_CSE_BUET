@@ -64,6 +64,8 @@ void printFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor)
     uint32_t LostPackets = 0;
     int j = 0;
 
+    std::ofstream flowout("mytest-flow.dat", std::ios::out);
+
     monitor->CheckForLostPackets();
     Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowmon->GetClassifier());
     FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats();
@@ -76,14 +78,19 @@ void printFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor)
         std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / SIMULATION_TIME / 1000 << " kbps\n";
         std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
         std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
-        std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / SIMULATION_TIME / 1000 << " kbps\n";
+
+        double calthroughput = i->second.rxBytes * 8.0 / SIMULATION_TIME / 1000;
+
+        std::cout << "  Throughput: " << calthroughput << " kbps\n";
 
         SentPackets = SentPackets + (i->second.txPackets);
         ReceivedPackets = ReceivedPackets + (i->second.rxPackets);
         LostPackets = LostPackets + (i->second.txPackets - i->second.rxPackets);
-        throughPut += (i->second.rxBytes * 8.0 / SIMULATION_TIME / 1000);
+        throughPut += calthroughput;
 
         j++;
+
+        flowout << i->first << " " << calthroughput << std::endl;
     }
 
     float avgthroughPut = throughPut / j;
@@ -309,6 +316,7 @@ int main(int argc, char *argv[])
     FlowMonitorHelper flowmon;
     Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
+    std::ofstream thr("mytest-throughput.dat", std::ios::out);
     Simulator::Schedule(Seconds(0 + 0.000001), &TraceThroughput, monitor);
 
     Simulator::Stop(Seconds(SIMULATION_TIME));
