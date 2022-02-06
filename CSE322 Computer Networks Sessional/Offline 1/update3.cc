@@ -42,7 +42,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("ThirdScriptExample");
 
 double SIMULATION_TIME = 10.0; // s
-uint32_t NUMOFNODES = 5;
+uint32_t NUMOFNODES = 6;
 uint32_t WIRED_BANDWIDTH = 100;    // Mbps
 uint32_t WIRED_DELAY = 30;         // ms
 uint32_t BOTTLENECKBANDWIDTH = 10; // Mbps
@@ -115,7 +115,7 @@ TraceThroughput(Ptr<FlowMonitor> monitor)
     thr << curTime.GetSeconds() << " " << 8 * (itr->second.txBytes - prev) / (1000 * (curTime.GetSeconds() - prevTime.GetSeconds())) << std::endl;
     prevTime = curTime;
     prev = itr->second.txBytes;
-    Simulator::Schedule(Seconds(1), &TraceThroughput, monitor);
+    Simulator::Schedule(Seconds(0.1), &TraceThroughput, monitor);
 }
 
 int main(int argc, char *argv[])
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     apDevices = wifi.Install(phy, mac, wifiApNode);
 
     Ptr<RateErrorModel> em = CreateObject<RateErrorModel>();
-    em->SetAttribute("ErrorRate", DoubleValue(.03));
+    em->SetAttribute("ErrorRate", DoubleValue(.00001));
 
     // after wifi netdevices are created
     for (uint32_t i = 1; i <= nWifi; i++)
@@ -243,8 +243,6 @@ int main(int argc, char *argv[])
     Ipv4InterfaceContainer staInterfaces = address.Assign(staDevices);
     Ipv4InterfaceContainer apInterfaces = address.Assign(apDevices);
 
-    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-
     // Simulator::Stop(Seconds(10.0));
 
     // BulkSendHelper source("ns3::TcpSocketFactory",
@@ -264,7 +262,7 @@ int main(int argc, char *argv[])
     // sinkApps.Start(Seconds(0.0));
     // sinkApps.Stop(Seconds(10.0));
 
-    for (uint16_t i = 0; i < nCsma; i++)
+    /*for (uint16_t i = 0; i < nCsma; i++)
     {
         BulkSendHelper source("ns3::TcpSocketFactory",
                               InetSocketAddress(csmaInterfaces.GetAddress(i), port));
@@ -302,7 +300,77 @@ int main(int argc, char *argv[])
         ApplicationContainer sinkApps = sink.Install(wifiStaNodes.Get(i));
         sinkApps.Start(Seconds(0.0));
         sinkApps.Stop(Seconds(SIMULATION_TIME));
+    }*/
+
+    uint16_t port = 50000;
+
+    for (uint16_t i = 0; i < 1; i++)
+    {
+        BulkSendHelper source("ns3::TcpSocketFactory",
+                              InetSocketAddress(csmaInterfaces.GetAddress(i), port));
+        // Set the amount of data to send in bytes.  Zero is unlimited.
+        source.SetAttribute("MaxBytes", UintegerValue(maxBytes));
+        ApplicationContainer sourceApps = source.Install(wifiStaNodes.Get(i));
+        sourceApps.Start(Seconds(0.0));
+        sourceApps.Stop(Seconds(SIMULATION_TIME));
+
+        //
+        // Create a PacketSinkApplication and install it on node
+        //
+        PacketSinkHelper sink("ns3::TcpSocketFactory",
+                              InetSocketAddress(Ipv4Address::GetAny(), port));
+        ApplicationContainer sinkApps = sink.Install(csmaNodes.Get(i));
+        sinkApps.Start(Seconds(0.0));
+        sinkApps.Stop(Seconds(SIMULATION_TIME));
     }
+
+    for (uint16_t i = 1; i < nCsma; i++)
+    {
+        AddressValue remoteAddress(InetSocketAddress(csmaInterfaces.GetAddress(i), port));
+        Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(PACKET_SIZE));
+        OnOffHelper fgSend("ns3::TcpSocketFactory", Address());
+        fgSend.SetAttribute("Remote", remoteAddress);
+        fgSend.SetAttribute("PacketSize", UintegerValue(750));
+        fgSend.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+        fgSend.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+        fgSend.SetAttribute("DataRate", DataRateValue(DataRate("100Mbps")));
+        ApplicationContainer sourceApp = fgSend.Install(wifiStaNodes.Get(nWifi - i));
+
+        sourceApp.Start(Seconds(0.0));
+        sourceApp.Stop(Seconds(10.0));
+
+        Address sinkLocalAddress(InetSocketAddress(Ipv4Address::GetAny(), port));
+        PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
+        // sinkHelper.SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+        ApplicationContainer sinkApp = sinkHelper.Install(csmaNodes.Get(i));
+        sinkApp.Start(Seconds(1.0));
+        sinkApp.Stop(Seconds(10.0));
+    }
+
+    // for (uint16_t i = 1; i < nCsma; i++)
+    // {
+    //     AddressValue remoteAddress(InetSocketAddress(staInterfaces.GetAddress(i), port));
+    //     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(PACKET_SIZE));
+    //     OnOffHelper fgSend("ns3::TcpSocketFactory", Address());
+    //     fgSend.SetAttribute("Remote", remoteAddress);
+    //     fgSend.SetAttribute("PacketSize", UintegerValue(1472));
+    //     fgSend.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    //     fgSend.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    //     fgSend.SetAttribute("DataRate", DataRateValue(DataRate("100Mbps")));
+    //     ApplicationContainer sourceApp = fgSend.Install(csmaNodes.Get(i));
+
+    //     sourceApp.Start(Seconds(0.0));
+    //     sourceApp.Stop(Seconds(10.0));
+
+    //     Address sinkLocalAddress(InetSocketAddress(Ipv4Address::GetAny(), port));
+    //     PacketSinkHelper sinkHelper("ns3::TcpSocketFactory", sinkLocalAddress);
+    //     // sinkHelper.SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+    //     ApplicationContainer sinkApp = sinkHelper.Install(wifiStaNodes.Get(i));
+    //     sinkApp.Start(Seconds(0.0));
+    //     sinkApp.Stop(Seconds(10.0));
+    // }
+
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     if (tracing)
     {
@@ -317,7 +385,7 @@ int main(int argc, char *argv[])
     Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
     std::ofstream thr("mytest-throughput.dat", std::ios::out);
-    Simulator::Schedule(Seconds(0 + 0.000001), &TraceThroughput, monitor);
+    Simulator::Schedule(Seconds(1.1 + 0.000001), &TraceThroughput, monitor);
 
     Simulator::Stop(Seconds(SIMULATION_TIME));
     Simulator::Run();
