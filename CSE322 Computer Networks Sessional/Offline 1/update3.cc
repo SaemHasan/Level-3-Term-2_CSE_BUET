@@ -51,9 +51,9 @@ uint32_t WIRELESS_BANDWIDTH = 5;   // Mbps
 uint32_t PACKET_SIZE = 1000;       // Bytes
 float WIRELESS_DELAY = 0.01;       // ms
 uint16_t port = 50000;
-uint32_t maxBytes = PACKET_SIZE;
+uint32_t maxBytes = 1500;
 
-uint32_t prev = 0;
+uint32_t *prev;
 Time prevTime = Seconds(0);
 
 void printFlow(FlowMonitorHelper *flowmon, Ptr<FlowMonitor> monitor)
@@ -109,12 +109,22 @@ static void
 TraceThroughput(Ptr<FlowMonitor> monitor)
 {
     FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats();
-    auto itr = stats.begin();
+    int cnt = 0;
+    int total = 0;
     Time curTime = Now();
+
+    for (auto itr = stats.begin(); itr != stats.end(); itr++)
+    {
+        total += (itr->second.txBytes - prev[cnt]);
+        prev[cnt] = itr->second.txBytes;
+        cnt++;
+    }
     std::ofstream thr("mytest-throughput.dat", std::ios::out | std::ios::app);
-    thr << curTime.GetSeconds() << " " << 8 * (itr->second.txBytes - prev) / (1000 * (curTime.GetSeconds() - prevTime.GetSeconds())) << std::endl;
+
+    thr << curTime.GetSeconds() << " " << 8 * (total) / (1000 * (curTime.GetSeconds() - prevTime.GetSeconds())) << std::endl;
+
     prevTime = curTime;
-    prev = itr->second.txBytes;
+
     Simulator::Schedule(Seconds(0.1), &TraceThroughput, monitor);
 }
 
@@ -243,6 +253,12 @@ int main(int argc, char *argv[])
     address.SetBase("10.1.3.0", "255.255.255.0");
     Ipv4InterfaceContainer staInterfaces = address.Assign(staDevices);
     Ipv4InterfaceContainer apInterfaces = address.Assign(apDevices);
+
+    prev = new uint32_t[2 * NUMOFNODES];
+    for (int i = 0; i < int(2 * NUMOFNODES); i++)
+    {
+        prev[i] = 0;
+    }
 
     //=======first one================//
 
