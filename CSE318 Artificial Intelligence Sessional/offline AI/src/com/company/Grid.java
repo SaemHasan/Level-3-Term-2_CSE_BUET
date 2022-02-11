@@ -37,6 +37,7 @@ public class Grid {
         corner_cum_prob = 1 - edge_cum_prob;
         sensor_correct_prob = SENSOR_COR_PROB;
         sensor_wrong_prob = 1 - sensor_correct_prob;
+        System.out.println("Initial Probability:");
         printGrid();
     }
 
@@ -65,12 +66,25 @@ public class Grid {
     }
 
     public void printGrid(){
-        System.out.println("\nTime : "+time);
+        if(time>0){
+            System.out.println("Probability Update:");
+        }
+        System.out.println("Time : "+time);
         System.out.println("=====================");
-        System.out.println("Grid : ");
+        //System.out.println("Grid : ");
         for(int i=0;i<n;i++){
             for(int j=0;j<m;j++){
-                System.out.print(String.format("%.2f",grid[i][j])+"  ");
+                if(grid[i][j]>=10){
+                    System.out.print(ConsoleColors.RED_BOLD_BRIGHT + String.format("%.2f",grid[i][j])+"  " + ConsoleColors.RESET);
+                }
+                else if(grid[i][j]>=7){
+                    System.out.print(ConsoleColors.GREEN_BOLD + String.format("%.2f",grid[i][j])+"  " + ConsoleColors.RESET);
+                }
+                else if(grid[i][j]>=4){
+                    System.out.print(ConsoleColors.YELLOW_BOLD + String.format("%.2f",grid[i][j])+"  " + ConsoleColors.RESET);
+                }
+                else
+                    System.out.print(String.format("%.2f",grid[i][j])+"  ");
             }
             System.out.println();
         }
@@ -160,6 +174,7 @@ public class Grid {
                 findCasper();
             }
             else if(action.equalsIgnoreCase("Q")){
+                System.out.println("\nBye Casper!");
                 break;
             }
         }
@@ -290,7 +305,7 @@ public class Grid {
         }
 
         System.out.println("====================\n");
-        System.out.println("Casper is most probably at ( "+row+", "+col+" )");
+        System.out.println(ConsoleColors.RED_BOLD_BRIGHT+"Casper is most probably at ( "+row+", "+col+" )"+ConsoleColors.RESET);
         System.out.println("\n====================");
     }
 
