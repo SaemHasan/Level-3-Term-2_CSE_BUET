@@ -1,31 +1,510 @@
+diff --git a/Makefile b/Makefile
+index 09d790c..bd921e2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -181,6 +181,8 @@ UPROGS=\
+ 	_usertests\
+ 	_wc\
+ 	_zombie\
++	_test1\
++	_test2\
+ 
+ fs.img: mkfs README $(UPROGS)
+ 	./mkfs fs.img README $(UPROGS)
+@@ -248,7 +250,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
+ # check in that version.
+ 
+ EXTRA=\
+-	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
++	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c test1.c test2.c\
+ 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
+ 	printf.c umalloc.c\
+ 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 diff --git a/defs.h b/defs.h
-index 82fb982..f33f2cb 100644
+index 82fb982..9791f64 100644
 --- a/defs.h
 +++ b/defs.h
-@@ -52,6 +52,11 @@ struct inode*   nameiparent(char*, char*);
- int             readi(struct inode*, char*, uint, uint);
- void            stati(struct inode*, struct stat*);
- int             writei(struct inode*, char*, uint, uint);
-+int             createSwapFile(struct proc* p);
-+int             readFromSwapFile(struct proc * p, char* buffer, uint placeOnFile, uint size);
-+int             writeToSwapFile(struct proc* p, char* buffer, uint placeOnFile, uint size);
-+int             removeSwapFile(struct proc* p);
-+
+@@ -11,180 +11,200 @@ struct stat;
+ struct superblock;
+ 
+ // bio.c
+-void            binit(void);
+-struct buf*     bread(uint, uint);
+-void            brelse(struct buf*);
+-void            bwrite(struct buf*);
++void binit(void);
++struct buf *bread(uint, uint);
++void brelse(struct buf *);
++void bwrite(struct buf *);
+ 
+ // console.c
+-void            consoleinit(void);
+-void            cprintf(char*, ...);
+-void            consoleintr(int(*)(void));
+-void            panic(char*) __attribute__((noreturn));
++void consoleinit(void);
++void cprintf(char *, ...);
++void consoleintr(int (*)(void));
++void panic(char *) __attribute__((noreturn));
+ 
+ // exec.c
+-int             exec(char*, char**);
++int exec(char *, char **);
+ 
+ // file.c
+-struct file*    filealloc(void);
+-void            fileclose(struct file*);
+-struct file*    filedup(struct file*);
+-void            fileinit(void);
+-int             fileread(struct file*, char*, int n);
+-int             filestat(struct file*, struct stat*);
+-int             filewrite(struct file*, char*, int n);
++struct file *filealloc(void);
++void fileclose(struct file *);
++struct file *filedup(struct file *);
++void fileinit(void);
++int fileread(struct file *, char *, int n);
++int filestat(struct file *, struct stat *);
++int filewrite(struct file *, char *, int n);
+ 
+ // fs.c
+-void            readsb(int dev, struct superblock *sb);
+-int             dirlink(struct inode*, char*, uint);
+-struct inode*   dirlookup(struct inode*, char*, uint*);
+-struct inode*   ialloc(uint, short);
+-struct inode*   idup(struct inode*);
+-void            iinit(int dev);
+-void            ilock(struct inode*);
+-void            iput(struct inode*);
+-void            iunlock(struct inode*);
+-void            iunlockput(struct inode*);
+-void            iupdate(struct inode*);
+-int             namecmp(const char*, const char*);
+-struct inode*   namei(char*);
+-struct inode*   nameiparent(char*, char*);
+-int             readi(struct inode*, char*, uint, uint);
+-void            stati(struct inode*, struct stat*);
+-int             writei(struct inode*, char*, uint, uint);
++void readsb(int dev, struct superblock *sb);
++int dirlink(struct inode *, char *, uint);
++struct inode *dirlookup(struct inode *, char *, uint *);
++struct inode *ialloc(uint, short);
++struct inode *idup(struct inode *);
++void iinit(int dev);
++void ilock(struct inode *);
++void iput(struct inode *);
++void iunlock(struct inode *);
++void iunlockput(struct inode *);
++void iupdate(struct inode *);
++int namecmp(const char *, const char *);
++struct inode *namei(char *);
++struct inode *nameiparent(char *, char *);
++int readi(struct inode *, char *, uint, uint);
++void stati(struct inode *, struct stat *);
++int writei(struct inode *, char *, uint, uint);
++int createSwapFile(struct proc *p);
++int readFromSwapFile(struct proc *p, char *buffer, uint placeOnFile, uint size);
++int writeToSwapFile(struct proc *p, char *buffer, uint placeOnFile, uint size);
++int removeSwapFile(struct proc *p);
  
  // ide.c
- void            ideinit(void);
-@@ -124,6 +129,11 @@ void            yield(void);
- // swtch.S
- void            swtch(struct context**, struct context*);
+-void            ideinit(void);
+-void            ideintr(void);
+-void            iderw(struct buf*);
++void ideinit(void);
++void ideintr(void);
++void iderw(struct buf *);
  
+ // ioapic.c
+-void            ioapicenable(int irq, int cpu);
+-extern uchar    ioapicid;
+-void            ioapicinit(void);
++void ioapicenable(int irq, int cpu);
++extern uchar ioapicid;
++void ioapicinit(void);
+ 
+ // kalloc.c
+-char*           kalloc(void);
+-void            kfree(char*);
+-void            kinit1(void*, void*);
+-void            kinit2(void*, void*);
++char *kalloc(void);
++void kfree(char *);
++void kinit1(void *, void *);
++void kinit2(void *, void *);
+ 
+ // kbd.c
+-void            kbdintr(void);
++void kbdintr(void);
+ 
+ // lapic.c
+-void            cmostime(struct rtcdate *r);
+-int             lapicid(void);
+-extern volatile uint*    lapic;
+-void            lapiceoi(void);
+-void            lapicinit(void);
+-void            lapicstartap(uchar, uint);
+-void            microdelay(int);
++void cmostime(struct rtcdate *r);
++int lapicid(void);
++extern volatile uint *lapic;
++void lapiceoi(void);
++void lapicinit(void);
++void lapicstartap(uchar, uint);
++void microdelay(int);
+ 
+ // log.c
+-void            initlog(int dev);
+-void            log_write(struct buf*);
+-void            begin_op();
+-void            end_op();
++void initlog(int dev);
++void log_write(struct buf *);
++void begin_op();
++void end_op();
+ 
+ // mp.c
+-extern int      ismp;
+-void            mpinit(void);
++extern int ismp;
++void mpinit(void);
+ 
+ // picirq.c
+-void            picenable(int);
+-void            picinit(void);
++void picenable(int);
++void picinit(void);
+ 
+ // pipe.c
+-int             pipealloc(struct file**, struct file**);
+-void            pipeclose(struct pipe*, int);
+-int             piperead(struct pipe*, char*, int);
+-int             pipewrite(struct pipe*, char*, int);
+-
+-//PAGEBREAK: 16
+-// proc.c
+-int             cpuid(void);
+-void            exit(void);
+-int             fork(void);
+-int             growproc(int);
+-int             kill(int);
+-struct cpu*     mycpu(void);
+-struct proc*    myproc();
+-void            pinit(void);
+-void            procdump(void);
+-void            scheduler(void) __attribute__((noreturn));
+-void            sched(void);
+-void            setproc(struct proc*);
+-void            sleep(void*, struct spinlock*);
+-void            userinit(void);
+-int             wait(void);
+-void            wakeup(void*);
+-void            yield(void);
++int pipealloc(struct file **, struct file **);
++void pipeclose(struct pipe *, int);
++int piperead(struct pipe *, char *, int);
++int pipewrite(struct pipe *, char *, int);
++
++// PAGEBREAK: 16
++//  proc.c
++int cpuid(void);
++void exit(void);
++int fork(void);
++int growproc(int);
++int kill(int);
++struct cpu *mycpu(void);
++struct proc *myproc();
++void pinit(void);
++void procdump(void);
++void scheduler(void) __attribute__((noreturn));
++void sched(void);
++void setproc(struct proc *);
++void sleep(void *, struct spinlock *);
++void userinit(void);
++int wait(void);
++void wakeup(void *);
++void yield(void);
+ 
+ // swtch.S
+-void            swtch(struct context**, struct context*);
++void swtch(struct context **, struct context *);
++
 +// sysfile
-+struct inode*   create(char *path, short type, short major, short minor);
-+int             isdirempty(struct inode *dp);
-+
-+
++struct inode *create(char *path, short type, short major, short minor);
++int isdirempty(struct inode *dp);
+ 
  // spinlock.c
- void            acquire(struct spinlock*);
- void            getcallerpcs(void*, uint*);
+-void            acquire(struct spinlock*);
+-void            getcallerpcs(void*, uint*);
+-int             holding(struct spinlock*);
+-void            initlock(struct spinlock*, char*);
+-void            release(struct spinlock*);
+-void            pushcli(void);
+-void            popcli(void);
++void acquire(struct spinlock *);
++void getcallerpcs(void *, uint *);
++int holding(struct spinlock *);
++void initlock(struct spinlock *, char *);
++void release(struct spinlock *);
++void pushcli(void);
++void popcli(void);
+ 
+ // sleeplock.c
+-void            acquiresleep(struct sleeplock*);
+-void            releasesleep(struct sleeplock*);
+-int             holdingsleep(struct sleeplock*);
+-void            initsleeplock(struct sleeplock*, char*);
++void acquiresleep(struct sleeplock *);
++void releasesleep(struct sleeplock *);
++int holdingsleep(struct sleeplock *);
++void initsleeplock(struct sleeplock *, char *);
+ 
+ // string.c
+-int             memcmp(const void*, const void*, uint);
+-void*           memmove(void*, const void*, uint);
+-void*           memset(void*, int, uint);
+-char*           safestrcpy(char*, const char*, int);
+-int             strlen(const char*);
+-int             strncmp(const char*, const char*, uint);
+-char*           strncpy(char*, const char*, int);
++int memcmp(const void *, const void *, uint);
++void *memmove(void *, const void *, uint);
++void *memset(void *, int, uint);
++char *safestrcpy(char *, const char *, int);
++int strlen(const char *);
++int strncmp(const char *, const char *, uint);
++char *strncpy(char *, const char *, int);
+ 
+ // syscall.c
+-int             argint(int, int*);
+-int             argptr(int, char**, int);
+-int             argstr(int, char**);
+-int             fetchint(uint, int*);
+-int             fetchstr(uint, char**);
+-void            syscall(void);
++int argint(int, int *);
++int argptr(int, char **, int);
++int argstr(int, char **);
++int fetchint(uint, int *);
++int fetchstr(uint, char **);
++void syscall(void);
+ 
+ // timer.c
+-void            timerinit(void);
++void timerinit(void);
+ 
+ // trap.c
+-void            idtinit(void);
+-extern uint     ticks;
+-void            tvinit(void);
++void idtinit(void);
++extern uint ticks;
++void tvinit(void);
+ extern struct spinlock tickslock;
+ 
+ // uart.c
+-void            uartinit(void);
+-void            uartintr(void);
+-void            uartputc(int);
++void uartinit(void);
++void uartintr(void);
++void uartputc(int);
+ 
+ // vm.c
+-void            seginit(void);
+-void            kvmalloc(void);
+-pde_t*          setupkvm(void);
+-char*           uva2ka(pde_t*, char*);
+-int             allocuvm(pde_t*, uint, uint);
+-int             deallocuvm(pde_t*, uint, uint);
+-void            freevm(pde_t*);
+-void            inituvm(pde_t*, char*, uint);
+-int             loaduvm(pde_t*, char*, struct inode*, uint, uint);
+-pde_t*          copyuvm(pde_t*, uint);
+-void            switchuvm(struct proc*);
+-void            switchkvm(void);
+-int             copyout(pde_t*, uint, void*, uint);
+-void            clearpteu(pde_t *pgdir, char *uva);
++void seginit(void);
++void kvmalloc(void);
++pde_t *setupkvm(void);
++char *uva2ka(pde_t *, char *);
++int allocuvm(pde_t *, uint, uint);
++int deallocuvm(pde_t *, uint, uint);
++void freevm(pde_t *);
++void inituvm(pde_t *, char *, uint);
++int loaduvm(pde_t *, char *, struct inode *, uint, uint);
++pde_t *copyuvm(pde_t *, uint, struct proc *); // added by sayem : , struct proc *
++void switchuvm(struct proc *);
++void switchkvm(void);
++int copyout(pde_t *, uint, void *, uint);
++void clearpteu(pde_t *pgdir, char *uva);
+ 
+ // number of elements in fixed-size array
+-#define NELEM(x) (sizeof(x)/sizeof((x)[0]))
++#define NELEM(x) (sizeof(x) / sizeof((x)[0]))
++
++// mydefined methods
++void showDetails(struct proc *p);                             // in proc.c
++int notInitProcess(struct proc *p);                           // in proc.c
++void initializeRAMandSwapDetails(struct proc *p);             // in proc.c
++void updatePgTable();                                         // in proc.c
++int EnqueuePage(pde_t *pgdir, struct proc *p, uint va);       // in vm.c
++void enqueue(pde_t *pgdir, struct proc *p, uint va);          // in vm.c
++int swapOutPage(pde_t *pgdir, struct proc *p);                // in vm.c
++int swap_in_page(uint va, struct proc *p);                    // in vm.c
++void deleteFromMemory(struct proc *p, pde_t *pgdir, uint va); // in vm.c
++int checkToSwapOut(pde_t *pgdir, struct proc *p);             // in vm.c
+\ No newline at end of file
+diff --git a/exec.c b/exec.c
+index b40134f..cc63073 100644
+--- a/exec.c
++++ b/exec.c
+@@ -7,12 +7,11 @@
+ #include "x86.h"
+ #include "elf.h"
+ 
+-int
+-exec(char *path, char **argv)
++int exec(char *path, char **argv)
+ {
+   char *s, *last;
+   int i, off;
+-  uint argc, sz, sp, ustack[3+MAXARG+1];
++  uint argc, sz, sp, ustack[3 + MAXARG + 1];
+   struct elfhdr elf;
+   struct inode *ip;
+   struct proghdr ph;
+@@ -21,7 +20,8 @@ exec(char *path, char **argv)
+ 
+   begin_op();
+ 
+-  if((ip = namei(path)) == 0){
++  if ((ip = namei(path)) == 0)
++  {
+     end_op();
+     cprintf("exec: fail\n");
+     return -1;
+@@ -30,30 +30,34 @@ exec(char *path, char **argv)
+   pgdir = 0;
+ 
+   // Check ELF header
+-  if(readi(ip, (char*)&elf, 0, sizeof(elf)) != sizeof(elf))
++  if (readi(ip, (char *)&elf, 0, sizeof(elf)) != sizeof(elf))
+     goto bad;
+-  if(elf.magic != ELF_MAGIC)
++  if (elf.magic != ELF_MAGIC)
+     goto bad;
+ 
+-  if((pgdir = setupkvm()) == 0)
++  if ((pgdir = setupkvm()) == 0)
+     goto bad;
+ 
++  // added by sayem
++  curproc->pagesInMemoryCount = 0;
++
+   // Load program into memory.
+   sz = 0;
+-  for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
+-    if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
++  for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph))
++  {
++    if (readi(ip, (char *)&ph, off, sizeof(ph)) != sizeof(ph))
+       goto bad;
+-    if(ph.type != ELF_PROG_LOAD)
++    if (ph.type != ELF_PROG_LOAD)
+       continue;
+-    if(ph.memsz < ph.filesz)
++    if (ph.memsz < ph.filesz)
+       goto bad;
+-    if(ph.vaddr + ph.memsz < ph.vaddr)
++    if (ph.vaddr + ph.memsz < ph.vaddr)
+       goto bad;
+-    if((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
++    if ((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
+       goto bad;
+-    if(ph.vaddr % PGSIZE != 0)
++    if (ph.vaddr % PGSIZE != 0)
+       goto bad;
+-    if(loaduvm(pgdir, (char*)ph.vaddr, ip, ph.off, ph.filesz) < 0)
++    if (loaduvm(pgdir, (char *)ph.vaddr, ip, ph.off, ph.filesz) < 0)
+       goto bad;
+   }
+   iunlockput(ip);
+@@ -63,50 +67,55 @@ exec(char *path, char **argv)
+   // Allocate two pages at the next page boundary.
+   // Make the first inaccessible.  Use the second as the user stack.
+   sz = PGROUNDUP(sz);
+-  if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
++  if ((sz = allocuvm(pgdir, sz, sz + 2 * PGSIZE)) == 0)
+     goto bad;
+-  clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
++  clearpteu(pgdir, (char *)(sz - 2 * PGSIZE));
+   sp = sz;
+ 
+   // Push argument strings, prepare rest of stack in ustack.
+-  for(argc = 0; argv[argc]; argc++) {
+-    if(argc >= MAXARG)
++  for (argc = 0; argv[argc]; argc++)
++  {
++    if (argc >= MAXARG)
+       goto bad;
+     sp = (sp - (strlen(argv[argc]) + 1)) & ~3;
+-    if(copyout(pgdir, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
++    if (copyout(pgdir, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
+       goto bad;
+-    ustack[3+argc] = sp;
++    ustack[3 + argc] = sp;
+   }
+-  ustack[3+argc] = 0;
++  ustack[3 + argc] = 0;
+ 
+-  ustack[0] = 0xffffffff;  // fake return PC
++  ustack[0] = 0xffffffff; // fake return PC
+   ustack[1] = argc;
+-  ustack[2] = sp - (argc+1)*4;  // argv pointer
++  ustack[2] = sp - (argc + 1) * 4; // argv pointer
+ 
+-  sp -= (3+argc+1) * 4;
+-  if(copyout(pgdir, sp, ustack, (3+argc+1)*4) < 0)
++  sp -= (3 + argc + 1) * 4;
++  if (copyout(pgdir, sp, ustack, (3 + argc + 1) * 4) < 0)
+     goto bad;
+ 
+   // Save program name for debugging.
+-  for(last=s=path; *s; s++)
+-    if(*s == '/')
+-      last = s+1;
++  for (last = s = path; *s; s++)
++    if (*s == '/')
++      last = s + 1;
+   safestrcpy(curproc->name, last, sizeof(curproc->name));
+ 
+   // Commit to the user image.
+   oldpgdir = curproc->pgdir;
+   curproc->pgdir = pgdir;
+   curproc->sz = sz;
+-  curproc->tf->eip = elf.entry;  // main
++  curproc->tf->eip = elf.entry; // main
+   curproc->tf->esp = sp;
+   switchuvm(curproc);
++  // added by sayem
++  curproc->isItinExec = 1;
+   freevm(oldpgdir);
++  curproc->isItinExec = 0;
+   return 0;
+ 
+- bad:
+-  if(pgdir)
++bad:
++  if (pgdir)
+     freevm(pgdir);
+-  if(ip){
++  if (ip)
++  {
+     iunlockput(ip);
+     end_op();
+   }
 diff --git a/fs.c b/fs.c
 index f77275f..4966e79 100644
 --- a/fs.c
@@ -189,7 +668,7 @@ index a82d8e2..aec4420 100644
  // Address in page table or page directory entry
  #define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)
 diff --git a/proc.c b/proc.c
-index 806b1b1..8b0ecbd 100644
+index 806b1b1..621c3c4 100644
 --- a/proc.c
 +++ b/proc.c
 @@ -7,7 +7,8 @@
@@ -297,7 +776,7 @@ index 806b1b1..8b0ecbd 100644
      p->state = UNUSED;
      return 0;
    }
-@@ -100,33 +103,32 @@ found:
+@@ -100,33 +103,42 @@ found:
  
    // Leave room for trap frame.
    sp -= sizeof *p->tf;
@@ -316,6 +795,16 @@ index 806b1b1..8b0ecbd 100644
    memset(p->context, 0, sizeof *p->context);
    p->context->eip = (uint)forkret;
  
++  // added by sayem
++  p->pagesInMemoryCount = 0;
++  p->pageSwapedOutCount = 0;
++  p->isItinExec = 0;
++  if (notInitProcess(p))
++  {
++    createSwapFile(p);
++    initializeRAMandSwapDetails(p);
++  }
++
    return p;
  }
  
@@ -339,7 +828,7 @@ index 806b1b1..8b0ecbd 100644
      panic("userinit: out of memory?");
    inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
    p->sz = PGSIZE;
-@@ -137,7 +139,7 @@ userinit(void)
+@@ -137,7 +149,7 @@ userinit(void)
    p->tf->ss = p->tf->ds;
    p->tf->eflags = FL_IF;
    p->tf->esp = PGSIZE;
@@ -348,7 +837,7 @@ index 806b1b1..8b0ecbd 100644
  
    safestrcpy(p->name, "initcode", sizeof(p->name));
    p->cwd = namei("/");
-@@ -155,18 +157,20 @@ userinit(void)
+@@ -155,18 +167,20 @@ userinit(void)
  
  // Grow current process's memory by n bytes.
  // Return 0 on success, -1 on failure.
@@ -375,7 +864,7 @@ index 806b1b1..8b0ecbd 100644
        return -1;
    }
    curproc->sz = sz;
-@@ -177,20 +181,21 @@ growproc(int n)
+@@ -177,20 +191,21 @@ growproc(int n)
  // Create a new process copying p as the parent.
  // Sets up stack to return as if from system call.
  // Caller must set state of returned proc to RUNNABLE.
@@ -396,12 +885,12 @@ index 806b1b1..8b0ecbd 100644
  
    // Copy process state from proc.
 -  if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
-+  if ((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0)
++  if ((np->pgdir = copyuvm(curproc->pgdir, curproc->sz, np)) == 0)
 +  {
      kfree(np->kstack);
      np->kstack = 0;
      np->state = UNUSED;
-@@ -203,8 +208,8 @@ fork(void)
+@@ -203,8 +218,8 @@ fork(void)
    // Clear %eax so that fork returns 0 in the child.
    np->tf->eax = 0;
  
@@ -412,7 +901,7 @@ index 806b1b1..8b0ecbd 100644
        np->ofile[i] = filedup(curproc->ofile[i]);
    np->cwd = idup(curproc->cwd);
  
-@@ -224,19 +229,20 @@ fork(void)
+@@ -224,19 +239,20 @@ fork(void)
  // Exit the current process.  Does not return.
  // An exited process remains in the zombie state
  // until its parent calls wait() to find out it exited.
@@ -438,7 +927,19 @@ index 806b1b1..8b0ecbd 100644
        fileclose(curproc->ofile[fd]);
        curproc->ofile[fd] = 0;
      }
-@@ -253,10 +259,12 @@ exit(void)
+@@ -247,16 +263,24 @@ exit(void)
+   end_op();
+   curproc->cwd = 0;
+ 
++  // added by sayem
++  if (notInitProcess(curproc))
++  {
++    removeSwapFile(curproc);
++  }
++
+   acquire(&ptable.lock);
+ 
+   // Parent might be sleeping in wait().
    wakeup1(curproc->parent);
  
    // Pass abandoned children to init.
@@ -454,7 +955,7 @@ index 806b1b1..8b0ecbd 100644
          wakeup1(initproc);
      }
    }
-@@ -269,22 +277,24 @@ exit(void)
+@@ -269,22 +293,24 @@ exit(void)
  
  // Wait for a child process to exit and return its pid.
  // Return -1 if this process has no children.
@@ -486,7 +987,7 @@ index 806b1b1..8b0ecbd 100644
          // Found one.
          pid = p->pid;
          kfree(p->kstack);
-@@ -301,39 +311,41 @@ wait(void)
+@@ -301,39 +327,41 @@ wait(void)
      }
  
      // No point waiting if we don't have any children.
@@ -544,7 +1045,7 @@ index 806b1b1..8b0ecbd 100644
          continue;
  
        // Switch to chosen process.  It is the process's job
-@@ -351,7 +363,6 @@ scheduler(void)
+@@ -351,7 +379,6 @@ scheduler(void)
        c->proc = 0;
      }
      release(&ptable.lock);
@@ -552,7 +1053,7 @@ index 806b1b1..8b0ecbd 100644
    }
  }
  
-@@ -362,19 +373,18 @@ scheduler(void)
+@@ -362,19 +389,18 @@ scheduler(void)
  // be proc->intena and proc->ncli, but that would
  // break in the few places where a lock is held but
  // there's no process.
@@ -577,7 +1078,7 @@ index 806b1b1..8b0ecbd 100644
      panic("sched interruptible");
    intena = mycpu()->intena;
    swtch(&p->context, mycpu()->scheduler);
-@@ -382,10 +392,9 @@ sched(void)
+@@ -382,10 +408,9 @@ sched(void)
  }
  
  // Give up the CPU for one scheduling round.
@@ -590,7 +1091,7 @@ index 806b1b1..8b0ecbd 100644
    myproc()->state = RUNNABLE;
    sched();
    release(&ptable.lock);
-@@ -393,14 +402,14 @@ yield(void)
+@@ -393,14 +418,14 @@ yield(void)
  
  // A fork child's very first scheduling by scheduler()
  // will swtch here.  "Return" to user space.
@@ -608,7 +1109,7 @@ index 806b1b1..8b0ecbd 100644
      // Some initialization functions must be run in the context
      // of a regular process (e.g., they call sleep), and thus cannot
      // be run from main().
-@@ -414,15 +423,14 @@ forkret(void)
+@@ -414,15 +439,14 @@ forkret(void)
  
  // Atomically release lock and sleep on chan.
  // Reacquires lock when awakened.
@@ -628,7 +1129,7 @@ index 806b1b1..8b0ecbd 100644
      panic("sleep without lk");
  
    // Must acquire ptable.lock in order to
-@@ -431,8 +439,9 @@ sleep(void *chan, struct spinlock *lk)
+@@ -431,8 +455,9 @@ sleep(void *chan, struct spinlock *lk)
    // guaranteed that we won't miss any wakeup
    // (wakeup runs with ptable.lock locked),
    // so it's okay to release lk.
@@ -640,7 +1141,7 @@ index 806b1b1..8b0ecbd 100644
      release(lk);
    }
    // Go to sleep.
-@@ -445,28 +454,28 @@ sleep(void *chan, struct spinlock *lk)
+@@ -445,28 +470,28 @@ sleep(void *chan, struct spinlock *lk)
    p->chan = 0;
  
    // Reacquire original lock.
@@ -677,7 +1178,7 @@ index 806b1b1..8b0ecbd 100644
  {
    acquire(&ptable.lock);
    wakeup1(chan);
-@@ -476,17 +485,18 @@ wakeup(void *chan)
+@@ -476,17 +501,18 @@ wakeup(void *chan)
  // Kill the process with the given pid.
  // Process won't exit until it returns
  // to user space (see trap in trap.c).
@@ -701,7 +1202,7 @@ index 806b1b1..8b0ecbd 100644
          p->state = RUNNABLE;
        release(&ptable.lock);
        return 0;
-@@ -496,39 +506,104 @@ kill(int pid)
+@@ -496,39 +522,169 @@ kill(int pid)
    return -1;
  }
  
@@ -711,8 +1212,6 @@ index 806b1b1..8b0ecbd 100644
 -// No lock to avoid wedging a stuck machine further.
 -void
 -procdump(void)
-+void showDetails(struct proc *p);
-+
 +// PAGEBREAK: 36
 +//  Print a process listing to console.  For debugging.
 +//  Runs when user types ^P on console.
@@ -763,9 +1262,13 @@ index 806b1b1..8b0ecbd 100644
      }
      cprintf("\n");
 +
++    // added by sayem
 +    showDetails(p);
-   }
- }
++  }
++}
++
++//=========================added methods============================//
++// added by sayem
 +
 +void showDetails(struct proc *p)
 +{
@@ -826,20 +1329,217 @@ index 806b1b1..8b0ecbd 100644
 +    pde++;
 +  }
 +}
-\ No newline at end of file
++
++int notInitProcess(struct proc *p)
++{
++  if (p->pid > 1)
++    return 1;
++  return 0;
++}
++
++void initializeRAMandSwapDetails(struct proc *p)
++{
++  for (int i = 0; i < MAX_PSYC_PAGES; i++)
++  {
++    p->pagesInMemory[i].isValidData = 0;
++    p->pagesInMemory[i].offsetIdx = fakeAddr;
++    p->pagesInMemory[i].va = fakeAddr;
++    p->pagesInMemory[i].pte = 0;
++    p->pagesInMemory[i].counter = 0;
++  }
++  for (int i = 0; i < MAX_TOTAL_PAGES; i++)
++  {
++    p->swapDetails[i].isValidData = 0;
++    p->swapDetails[i].va = fakeAddr;
++    p->swapDetails[i].offsetIdx = fakeAddr;
++    p->swapDetails[i].pte = 0;
++    p->swapDetails[i].counter = 0;
+   }
+ }
++
++void updateCounter(struct proc *p)
++{
++  pte_t *pte;
++  // cprintf("hellllllooooooooo\n");
++  for (int i = 0; i < MAX_PSYC_PAGES; i++)
++  {
++    if (p->pagesInMemory[i].isValidData)
++    {
++      pte = p->pagesInMemory[i].pte;
++
++      if (*pte & PTE_A)
++      {
++        p->pagesInMemory[i].counter = p->pagesInMemory[i].counter + 1;
++        *pte &= ~PTE_A;
++      }
++    }
++  }
++}
++
++void updatePgTable()
++{
++
++  // cprintf("here i am here i am\n");
++  struct proc *p;
++
++  acquire(&ptable.lock);
++  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
++  {
++    if (p->state == RUNNABLE || p->state == RUNNING || p->state == SLEEPING)
++    {
++      updateCounter(p);
++    }
++  }
++  release(&ptable.lock);
++}
 diff --git a/proc.h b/proc.h
-index 1647114..9f65fae 100644
+index 1647114..6d5000c 100644
 --- a/proc.h
 +++ b/proc.h
-@@ -49,6 +49,8 @@ struct proc {
-   struct file *ofile[NOFILE];  // Open files
-   struct inode *cwd;           // Current directory
-   char name[16];               // Process name (debugging)
-+  //Swap file. must initiate with create swap file
-+  struct file *swapFile;			//page file
+@@ -1,30 +1,38 @@
++#define PRINT_VERBOSE 0
++#define NFU_ALGO 1
++#define MAX_PSYC_PAGES 15
++#define MAX_TOTAL_PAGES 30
++#define fakeAddr 0xffffffff
++
+ // Per-CPU state
+-struct cpu {
+-  uchar apicid;                // Local APIC ID
+-  struct context *scheduler;   // swtch() here to enter scheduler
+-  struct taskstate ts;         // Used by x86 to find stack for interrupt
+-  struct segdesc gdt[NSEGS];   // x86 global descriptor table
+-  volatile uint started;       // Has the CPU started?
+-  int ncli;                    // Depth of pushcli nesting.
+-  int intena;                  // Were interrupts enabled before pushcli?
+-  struct proc *proc;           // The process running on this cpu or null
++struct cpu
++{
++  uchar apicid;              // Local APIC ID
++  struct context *scheduler; // swtch() here to enter scheduler
++  struct taskstate ts;       // Used by x86 to find stack for interrupt
++  struct segdesc gdt[NSEGS]; // x86 global descriptor table
++  volatile uint started;     // Has the CPU started?
++  int ncli;                  // Depth of pushcli nesting.
++  int intena;                // Were interrupts enabled before pushcli?
++  struct proc *proc;         // The process running on this cpu or null
+ };
+ 
+ extern struct cpu cpus[NCPU];
+ extern int ncpu;
+ 
+-//PAGEBREAK: 17
+-// Saved registers for kernel context switches.
+-// Don't need to save all the segment registers (%cs, etc),
+-// because they are constant across kernel contexts.
+-// Don't need to save %eax, %ecx, %edx, because the
+-// x86 convention is that the caller has saved them.
+-// Contexts are stored at the bottom of the stack they
+-// describe; the stack pointer is the address of the context.
+-// The layout of the context matches the layout of the stack in swtch.S
+-// at the "Switch stacks" comment. Switch doesn't save eip explicitly,
+-// but it is on the stack and allocproc() manipulates it.
+-struct context {
++// PAGEBREAK: 17
++//  Saved registers for kernel context switches.
++//  Don't need to save all the segment registers (%cs, etc),
++//  because they are constant across kernel contexts.
++//  Don't need to save %eax, %ecx, %edx, because the
++//  x86 convention is that the caller has saved them.
++//  Contexts are stored at the bottom of the stack they
++//  describe; the stack pointer is the address of the context.
++//  The layout of the context matches the layout of the stack in swtch.S
++//  at the "Switch stacks" comment. Switch doesn't save eip explicitly,
++//  but it is on the stack and allocproc() manipulates it.
++struct context
++{
+   uint edi;
+   uint esi;
+   uint ebx;
+@@ -32,23 +40,50 @@ struct context {
+   uint eip;
+ };
+ 
+-enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
++// added by sayem
++struct pageData
++{
++  pte_t *pte;
++  uint va;
++  uint offsetIdx;
++  int isValidData;
++  int counter;
++};
++
++enum procstate
++{
++  UNUSED,
++  EMBRYO,
++  SLEEPING,
++  RUNNABLE,
++  RUNNING,
++  ZOMBIE
++};
+ 
+ // Per-process state
+-struct proc {
+-  uint sz;                     // Size of process memory (bytes)
+-  pde_t* pgdir;                // Page table
+-  char *kstack;                // Bottom of kernel stack for this process
+-  enum procstate state;        // Process state
+-  int pid;                     // Process ID
+-  struct proc *parent;         // Parent process
+-  struct trapframe *tf;        // Trap frame for current syscall
+-  struct context *context;     // swtch() here to run process
+-  void *chan;                  // If non-zero, sleeping on chan
+-  int killed;                  // If non-zero, have been killed
+-  struct file *ofile[NOFILE];  // Open files
+-  struct inode *cwd;           // Current directory
+-  char name[16];               // Process name (debugging)
++struct proc
++{
++  uint sz;                    // Size of process memory (bytes)
++  pde_t *pgdir;               // Page table
++  char *kstack;               // Bottom of kernel stack for this process
++  enum procstate state;       // Process state
++  int pid;                    // Process ID
++  struct proc *parent;        // Parent process
++  struct trapframe *tf;       // Trap frame for current syscall
++  struct context *context;    // swtch() here to run process
++  void *chan;                 // If non-zero, sleeping on chan
++  int killed;                 // If non-zero, have been killed
++  struct file *ofile[NOFILE]; // Open files
++  struct inode *cwd;          // Current directory
++  char name[16];              // Process name (debugging)
++  // Swap file. must initiate with create swap file
++  struct file *swapFile; // page file
++  // added by sayem
++  struct pageData pagesInMemory[MAX_PSYC_PAGES]; // for queue
++  struct pageData swapDetails[MAX_TOTAL_PAGES];  // for swap details
++  int pagesInMemoryCount;                        // for queue
++  int pageSwapedOutCount;                        // track swap out count
++  int isItinExec;
  };
  
  // Process memory is laid out contiguously, low addresses first:
+diff --git a/stat.h b/stat.h
+index 8a80933..dc8627d 100644
+--- a/stat.h
++++ b/stat.h
+@@ -1,8 +1,9 @@
+-#define T_DIR  1   // Directory
+-#define T_FILE 2   // File
+-#define T_DEV  3   // Device
++#define T_DIR 1  // Directory
++#define T_FILE 2 // File
++#define T_DEV 3  // Device
+ 
+-struct stat {
++struct stat
++{
+   short type;  // Type of file
+   int dev;     // File system's disk device
+   uint ino;    // Inode number
 diff --git a/sysfile.c b/sysfile.c
 index bfe61b7..bf3848e 100644
 --- a/sysfile.c
@@ -862,8 +1562,2551 @@ index bfe61b7..bf3848e 100644
  create(char *path, short type, short major, short minor)
  {
    struct inode *ip, *dp;
+diff --git a/test1.c b/test1.c
+new file mode 100644
+index 0000000..9750464
+--- /dev/null
++++ b/test1.c
+@@ -0,0 +1,51 @@
++#include "types.h"
++#include "stat.h"
++#include "user.h"
++
++int main(int argc, char *argv[])
++{
++    int sz = 4096 * 17;
++    int *mem = (int *)malloc(sz);
++    int pid = fork();
++    int k = 17;
++    if (pid == 0)
++    {
++        k = 17;
++    }
++    else
++    {
++        k = 13;
++    }
++
++    for (int i = 0; i < sz / 4; i++)
++    {
++        mem[i] = k * i;
++    }
++    // int pid = fork();
++    sleep(250);
++    int ok = 1;
++    for (int i = 0; i < sz / 4; i++)
++    {
++        if (mem[i] != k * i)
++        {
++            printf(2, "failed at : %d %d %d\n", i, k * i, mem[i]);
++            ok = 0;
++            break;
++        }
++    }
++    sleep(250);
++    if (!ok)
++    {
++        printf(2, "Failed\n");
++    }
++    else
++    {
++        printf(2, "Success\n");
++    }
++    free((void *)mem);
++    if (pid != 0)
++    {
++        wait();
++    }
++    exit();
++}
+\ No newline at end of file
+diff --git a/test2.c b/test2.c
+new file mode 100644
+index 0000000..5aade1d
+--- /dev/null
++++ b/test2.c
+@@ -0,0 +1,52 @@
++#include "types.h"
++#include "stat.h"
++#include "user.h"
++
++int main(int argc, char *argv[])
++{
++
++    if (argc != 2)
++    {
++        exit();
++    }
++
++    int size = atoi(argv[1]);
++    printf(1, "size: %d\n", size);
++
++    int allocsize = size * 4096;
++
++    printf(1, "malloc start\n");
++    uint *p = (uint *)malloc(allocsize);
++    printf(1, "malloc end\n");
++
++    fork();
++
++    for (uint i = 0; i < size * 1024; i++)
++    {
++        p[i] = i;
++    }
++    int ok = 1;
++    for (uint i = 0; i < size * 1024; i++)
++    {
++        if (p[i] != i)
++        {
++            ok = 0;
++            break;
++        }
++    }
++    if (ok)
++    {
++        printf(2, "all ok\n");
++    }
++    else
++    {
++        printf(2, "Not ok\n");
++    }
++    // for(uint i=0;i<size*1024;i++) {
++    //     printf(1,"%p %p\n",i,p[i]);
++    // }
++    // printf(1,"\n");
++
++    wait();
++    exit();
++}
+\ No newline at end of file
+diff --git a/trap.c b/trap.c
+index 41c66eb..8a8f660 100644
+--- a/trap.c
++++ b/trap.c
+@@ -10,45 +10,50 @@
+ 
+ // Interrupt descriptor table (shared by all CPUs).
+ struct gatedesc idt[256];
+-extern uint vectors[];  // in vectors.S: array of 256 entry pointers
++extern uint vectors[]; // in vectors.S: array of 256 entry pointers
+ struct spinlock tickslock;
+ uint ticks;
+ 
+-void
+-tvinit(void)
++void tvinit(void)
+ {
+   int i;
+ 
+-  for(i = 0; i < 256; i++)
+-    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0);
+-  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);
++  for (i = 0; i < 256; i++)
++    SETGATE(idt[i], 0, SEG_KCODE << 3, vectors[i], 0);
++  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE << 3, vectors[T_SYSCALL], DPL_USER);
+ 
+   initlock(&tickslock, "time");
+ }
+ 
+-void
+-idtinit(void)
++void idtinit(void)
+ {
+   lidt(idt, sizeof(idt));
+ }
+ 
+-//PAGEBREAK: 41
+-void
+-trap(struct trapframe *tf)
++// PAGEBREAK: 41
++void trap(struct trapframe *tf)
+ {
+-  if(tf->trapno == T_SYSCALL){
+-    if(myproc()->killed)
++  if (tf->trapno == T_SYSCALL)
++  {
++    if (myproc()->killed)
+       exit();
+     myproc()->tf = tf;
+     syscall();
+-    if(myproc()->killed)
++    if (myproc()->killed)
+       exit();
+     return;
+   }
+ 
+-  switch(tf->trapno){
++  switch (tf->trapno)
++  {
+   case T_IRQ0 + IRQ_TIMER:
+-    if(cpuid() == 0){
++    if (cpuid() == 0)
++    {
++      // added by sayem
++      if (NFU_ALGO)
++      {
++        updatePgTable();
++      }
+       acquire(&tickslock);
+       ticks++;
+       wakeup(&ticks);
+@@ -60,7 +65,7 @@ trap(struct trapframe *tf)
+     ideintr();
+     lapiceoi();
+     break;
+-  case T_IRQ0 + IRQ_IDE+1:
++  case T_IRQ0 + IRQ_IDE + 1:
+     // Bochs generates spurious IDE1 interrupts.
+     break;
+   case T_IRQ0 + IRQ_KBD:
+@@ -78,9 +83,29 @@ trap(struct trapframe *tf)
+     lapiceoi();
+     break;
+ 
+-  //PAGEBREAK: 13
++    // added by sayem
++    // for trap(PAGE FAULT)
++    // the %cs register contains a segment selector for the SEG_UCODE segment running at privi-lege
++    // level DPL_USER (i.e., user mode rather than kernel mode)
++  case T_PGFLT:
++    if (PRINT_VERBOSE)
++      cprintf("\n!!!!!!!!!!!!Page Fault!!!!!!!\n");
++    struct proc *p = myproc();
++    if (p != 0 && notInitProcess(p) && (tf->cs & 3) == DPL_USER)
++    {
++      cprintf("\n!!!!!!!!!!!!Page Fault!!!!!!!\n");
++      // cprintf("eikhane check korte hobe\n");
++      if (swap_in_page(rcr2(), p) != -1)
++      {
++        // soft miss;
++        break;
++      }
++    }
++
++  // PAGEBREAK: 13
+   default:
+-    if(myproc() == 0 || (tf->cs&3) == 0){
++    if (myproc() == 0 || (tf->cs & 3) == 0)
++    {
+       // In kernel, it must be our mistake.
+       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
+               tf->trapno, cpuid(), tf->eip, rcr2());
+@@ -97,16 +122,16 @@ trap(struct trapframe *tf)
+   // Force process exit if it has been killed and is in user space.
+   // (If it is still executing in the kernel, let it keep running
+   // until it gets to the regular system call return.)
+-  if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
++  if (myproc() && myproc()->killed && (tf->cs & 3) == DPL_USER)
+     exit();
+ 
+   // Force process to give up CPU on clock tick.
+   // If interrupts were on while locks held, would need to check nlock.
+-  if(myproc() && myproc()->state == RUNNING &&
+-     tf->trapno == T_IRQ0+IRQ_TIMER)
++  if (myproc() && myproc()->state == RUNNING &&
++      tf->trapno == T_IRQ0 + IRQ_TIMER)
+     yield();
+ 
+   // Check if the process has been killed since we yielded
+-  if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
++  if (myproc() && myproc()->killed && (tf->cs & 3) == DPL_USER)
+     exit();
+ }
+diff --git a/usertests.c b/usertests.c
+index a1e97e7..c2c5a21 100644
+--- a/usertests.c
++++ b/usertests.c
+@@ -10,28 +10,31 @@
+ 
+ char buf[8192];
+ char name[3];
+-char *echoargv[] = { "echo", "ALL", "TESTS", "PASSED", 0 };
++char *echoargv[] = {"echo", "ALL", "TESTS", "PASSED", 0};
+ int stdout = 1;
+ 
+ // does chdir() call iput(p->cwd) in a transaction?
+-void
+-iputtest(void)
++void iputtest(void)
+ {
+   printf(stdout, "iput test\n");
+ 
+-  if(mkdir("iputdir") < 0){
++  if (mkdir("iputdir") < 0)
++  {
+     printf(stdout, "mkdir failed\n");
+     exit();
+   }
+-  if(chdir("iputdir") < 0){
++  if (chdir("iputdir") < 0)
++  {
+     printf(stdout, "chdir iputdir failed\n");
+     exit();
+   }
+-  if(unlink("../iputdir") < 0){
++  if (unlink("../iputdir") < 0)
++  {
+     printf(stdout, "unlink ../iputdir failed\n");
+     exit();
+   }
+-  if(chdir("/") < 0){
++  if (chdir("/") < 0)
++  {
+     printf(stdout, "chdir / failed\n");
+     exit();
+   }
+@@ -39,28 +42,32 @@ iputtest(void)
+ }
+ 
+ // does exit() call iput(p->cwd) in a transaction?
+-void
+-exitiputtest(void)
++void exitiputtest(void)
+ {
+   int pid;
+ 
+   printf(stdout, "exitiput test\n");
+ 
+   pid = fork();
+-  if(pid < 0){
++  if (pid < 0)
++  {
+     printf(stdout, "fork failed\n");
+     exit();
+   }
+-  if(pid == 0){
+-    if(mkdir("iputdir") < 0){
++  if (pid == 0)
++  {
++    if (mkdir("iputdir") < 0)
++    {
+       printf(stdout, "mkdir failed\n");
+       exit();
+     }
+-    if(chdir("iputdir") < 0){
++    if (chdir("iputdir") < 0)
++    {
+       printf(stdout, "child chdir failed\n");
+       exit();
+     }
+-    if(unlink("../iputdir") < 0){
++    if (unlink("../iputdir") < 0)
++    {
+       printf(stdout, "unlink ../iputdir failed\n");
+       exit();
+     }
+@@ -81,31 +88,35 @@ exitiputtest(void)
+ //      for(i = 0; i < 10000; i++)
+ //        yield();
+ //    }
+-void
+-openiputtest(void)
++void openiputtest(void)
+ {
+   int pid;
+ 
+   printf(stdout, "openiput test\n");
+-  if(mkdir("oidir") < 0){
++  if (mkdir("oidir") < 0)
++  {
+     printf(stdout, "mkdir oidir failed\n");
+     exit();
+   }
+   pid = fork();
+-  if(pid < 0){
++  if (pid < 0)
++  {
+     printf(stdout, "fork failed\n");
+     exit();
+   }
+-  if(pid == 0){
++  if (pid == 0)
++  {
+     int fd = open("oidir", O_RDWR);
+-    if(fd >= 0){
++    if (fd >= 0)
++    {
+       printf(stdout, "open directory for write succeeded\n");
+       exit();
+     }
+     exit();
+   }
+   sleep(1);
+-  if(unlink("oidir") != 0){
++  if (unlink("oidir") != 0)
++  {
+     printf(stdout, "unlink failed\n");
+     exit();
+   }
+@@ -115,46 +126,52 @@ openiputtest(void)
+ 
+ // simple file system tests
+ 
+-void
+-opentest(void)
++void opentest(void)
+ {
+   int fd;
+ 
+   printf(stdout, "open test\n");
+   fd = open("echo", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(stdout, "open echo failed!\n");
+     exit();
+   }
+   close(fd);
+   fd = open("doesnotexist", 0);
+-  if(fd >= 0){
++  if (fd >= 0)
++  {
+     printf(stdout, "open doesnotexist succeeded!\n");
+     exit();
+   }
+   printf(stdout, "open test ok\n");
+ }
+ 
+-void
+-writetest(void)
++void writetest(void)
+ {
+   int fd;
+   int i;
+ 
+   printf(stdout, "small file test\n");
+-  fd = open("small", O_CREATE|O_RDWR);
+-  if(fd >= 0){
++  fd = open("small", O_CREATE | O_RDWR);
++  if (fd >= 0)
++  {
+     printf(stdout, "creat small succeeded; ok\n");
+-  } else {
++  }
++  else
++  {
+     printf(stdout, "error: creat small failed!\n");
+     exit();
+   }
+-  for(i = 0; i < 100; i++){
+-    if(write(fd, "aaaaaaaaaa", 10) != 10){
++  for (i = 0; i < 100; i++)
++  {
++    if (write(fd, "aaaaaaaaaa", 10) != 10)
++    {
+       printf(stdout, "error: write aa %d new file failed\n", i);
+       exit();
+     }
+-    if(write(fd, "bbbbbbbbbb", 10) != 10){
++    if (write(fd, "bbbbbbbbbb", 10) != 10)
++    {
+       printf(stdout, "error: write bb %d new file failed\n", i);
+       exit();
+     }
+@@ -162,44 +179,53 @@ writetest(void)
+   printf(stdout, "writes ok\n");
+   close(fd);
+   fd = open("small", O_RDONLY);
+-  if(fd >= 0){
++  if (fd >= 0)
++  {
+     printf(stdout, "open small succeeded ok\n");
+-  } else {
++  }
++  else
++  {
+     printf(stdout, "error: open small failed!\n");
+     exit();
+   }
+   i = read(fd, buf, 2000);
+-  if(i == 2000){
++  if (i == 2000)
++  {
+     printf(stdout, "read succeeded ok\n");
+-  } else {
++  }
++  else
++  {
+     printf(stdout, "read failed\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(unlink("small") < 0){
++  if (unlink("small") < 0)
++  {
+     printf(stdout, "unlink small failed\n");
+     exit();
+   }
+   printf(stdout, "small file test ok\n");
+ }
+ 
+-void
+-writetest1(void)
++void writetest1(void)
+ {
+   int i, fd, n;
+ 
+   printf(stdout, "big files test\n");
+ 
+-  fd = open("big", O_CREATE|O_RDWR);
+-  if(fd < 0){
++  fd = open("big", O_CREATE | O_RDWR);
++  if (fd < 0)
++  {
+     printf(stdout, "error: creat big failed!\n");
+     exit();
+   }
+ 
+-  for(i = 0; i < MAXFILE; i++){
+-    ((int*)buf)[0] = i;
+-    if(write(fd, buf, 512) != 512){
++  for (i = 0; i < MAXFILE; i++)
++  {
++    ((int *)buf)[0] = i;
++    if (write(fd, buf, 512) != 512)
++    {
+       printf(stdout, "error: write big file failed\n", i);
+       exit();
+     }
+@@ -208,41 +234,48 @@ writetest1(void)
+   close(fd);
+ 
+   fd = open("big", O_RDONLY);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(stdout, "error: open big failed!\n");
+     exit();
+   }
+ 
+   n = 0;
+-  for(;;){
++  for (;;)
++  {
+     i = read(fd, buf, 512);
+-    if(i == 0){
+-      if(n == MAXFILE - 1){
++    if (i == 0)
++    {
++      if (n == MAXFILE - 1)
++      {
+         printf(stdout, "read only %d blocks from big", n);
+         exit();
+       }
+       break;
+-    } else if(i != 512){
++    }
++    else if (i != 512)
++    {
+       printf(stdout, "read failed %d\n", i);
+       exit();
+     }
+-    if(((int*)buf)[0] != n){
++    if (((int *)buf)[0] != n)
++    {
+       printf(stdout, "read content of block %d is %d\n",
+-             n, ((int*)buf)[0]);
++             n, ((int *)buf)[0]);
+       exit();
+     }
+     n++;
+   }
+   close(fd);
+-  if(unlink("big") < 0){
++  if (unlink("big") < 0)
++  {
+     printf(stdout, "unlink big failed\n");
+     exit();
+   }
+   printf(stdout, "big files ok\n");
+ }
+ 
+-void
+-createtest(void)
++void createtest(void)
+ {
+   int i, fd;
+ 
+@@ -250,14 +283,16 @@ createtest(void)
+ 
+   name[0] = 'a';
+   name[2] = '\0';
+-  for(i = 0; i < 52; i++){
++  for (i = 0; i < 52; i++)
++  {
+     name[1] = '0' + i;
+-    fd = open(name, O_CREATE|O_RDWR);
++    fd = open(name, O_CREATE | O_RDWR);
+     close(fd);
+   }
+   name[0] = 'a';
+   name[2] = '\0';
+-  for(i = 0; i < 52; i++){
++  for (i = 0; i < 52; i++)
++  {
+     name[1] = '0' + i;
+     unlink(name);
+   }
+@@ -268,33 +303,37 @@ void dirtest(void)
+ {
+   printf(stdout, "mkdir test\n");
+ 
+-  if(mkdir("dir0") < 0){
++  if (mkdir("dir0") < 0)
++  {
+     printf(stdout, "mkdir failed\n");
+     exit();
+   }
+ 
+-  if(chdir("dir0") < 0){
++  if (chdir("dir0") < 0)
++  {
+     printf(stdout, "chdir dir0 failed\n");
+     exit();
+   }
+ 
+-  if(chdir("..") < 0){
++  if (chdir("..") < 0)
++  {
+     printf(stdout, "chdir .. failed\n");
+     exit();
+   }
+ 
+-  if(unlink("dir0") < 0){
++  if (unlink("dir0") < 0)
++  {
+     printf(stdout, "unlink dir0 failed\n");
+     exit();
+   }
+   printf(stdout, "mkdir test ok\n");
+ }
+ 
+-void
+-exectest(void)
++void exectest(void)
+ {
+   printf(stdout, "exec test\n");
+-  if(exec("echo", echoargv) < 0){
++  if (exec("echo", echoargv) < 0)
++  {
+     printf(stdout, "exec echo failed\n");
+     exit();
+   }
+@@ -302,52 +341,63 @@ exectest(void)
+ 
+ // simple fork and pipe read/write
+ 
+-void
+-pipe1(void)
++void pipe1(void)
+ {
+   int fds[2], pid;
+   int seq, i, n, cc, total;
+ 
+-  if(pipe(fds) != 0){
++  if (pipe(fds) != 0)
++  {
+     printf(1, "pipe() failed\n");
+     exit();
+   }
+   pid = fork();
+   seq = 0;
+-  if(pid == 0){
++  if (pid == 0)
++  {
+     close(fds[0]);
+-    for(n = 0; n < 5; n++){
+-      for(i = 0; i < 1033; i++)
++    for (n = 0; n < 5; n++)
++    {
++      for (i = 0; i < 1033; i++)
+         buf[i] = seq++;
+-      if(write(fds[1], buf, 1033) != 1033){
++      if (write(fds[1], buf, 1033) != 1033)
++      {
+         printf(1, "pipe1 oops 1\n");
+         exit();
+       }
+     }
+     exit();
+-  } else if(pid > 0){
++  }
++  else if (pid > 0)
++  {
+     close(fds[1]);
+     total = 0;
+     cc = 1;
+-    while((n = read(fds[0], buf, cc)) > 0){
+-      for(i = 0; i < n; i++){
+-        if((buf[i] & 0xff) != (seq++ & 0xff)){
++    while ((n = read(fds[0], buf, cc)) > 0)
++    {
++      for (i = 0; i < n; i++)
++      {
++        if ((buf[i] & 0xff) != (seq++ & 0xff))
++        {
+           printf(1, "pipe1 oops 2\n");
+           return;
+         }
+       }
+       total += n;
+       cc = cc * 2;
+-      if(cc > sizeof(buf))
++      if (cc > sizeof(buf))
+         cc = sizeof(buf);
+     }
+-    if(total != 5 * 1033){
++    if (total != 5 * 1033)
++    {
+       printf(1, "pipe1 oops 3 total %d\n", total);
+       exit();
+     }
+     close(fds[0]);
+     wait();
+-  } else {
++  }
++  else
++  {
+     printf(1, "fork() failed\n");
+     exit();
+   }
+@@ -355,36 +405,37 @@ pipe1(void)
+ }
+ 
+ // meant to be run w/ at most two CPUs
+-void
+-preempt(void)
++void preempt(void)
+ {
+   int pid1, pid2, pid3;
+   int pfds[2];
+ 
+   printf(1, "preempt: ");
+   pid1 = fork();
+-  if(pid1 == 0)
+-    for(;;)
++  if (pid1 == 0)
++    for (;;)
+       ;
+ 
+   pid2 = fork();
+-  if(pid2 == 0)
+-    for(;;)
++  if (pid2 == 0)
++    for (;;)
+       ;
+ 
+   pipe(pfds);
+   pid3 = fork();
+-  if(pid3 == 0){
++  if (pid3 == 0)
++  {
+     close(pfds[0]);
+-    if(write(pfds[1], "x", 1) != 1)
++    if (write(pfds[1], "x", 1) != 1)
+       printf(1, "preempt write error");
+     close(pfds[1]);
+-    for(;;)
++    for (;;)
+       ;
+   }
+ 
+   close(pfds[1]);
+-  if(read(pfds[0], buf, sizeof(buf)) != 1){
++  if (read(pfds[0], buf, sizeof(buf)) != 1)
++  {
+     printf(1, "preempt read error");
+     return;
+   }
+@@ -401,50 +452,58 @@ preempt(void)
+ }
+ 
+ // try to find any races between exit and wait
+-void
+-exitwait(void)
++void exitwait(void)
+ {
+   int i, pid;
+ 
+-  for(i = 0; i < 100; i++){
++  for (i = 0; i < 100; i++)
++  {
+     pid = fork();
+-    if(pid < 0){
++    if (pid < 0)
++    {
+       printf(1, "fork failed\n");
+       return;
+     }
+-    if(pid){
+-      if(wait() != pid){
++    if (pid)
++    {
++      if (wait() != pid)
++      {
+         printf(1, "wait wrong pid\n");
+         return;
+       }
+-    } else {
++    }
++    else
++    {
+       exit();
+     }
+   }
+   printf(1, "exitwait ok\n");
+ }
+ 
+-void
+-mem(void)
++void mem(void)
+ {
+   void *m1, *m2;
+   int pid, ppid;
+ 
+   printf(1, "mem test\n");
+   ppid = getpid();
+-  if((pid = fork()) == 0){
++  if ((pid = fork()) == 0)
++  {
+     m1 = 0;
+-    while((m2 = malloc(10001)) != 0){
+-      *(char**)m2 = m1;
++    while ((m2 = malloc(10001)) != 0)
++    {
++      *(char **)m2 = m1;
+       m1 = m2;
+     }
+-    while(m1){
+-      m2 = *(char**)m1;
++    while (m1)
++    {
++      m2 = *(char **)m1;
+       free(m1);
+       m1 = m2;
+     }
+-    m1 = malloc(1024*20);
+-    if(m1 == 0){
++    m1 = malloc(1024 * 20);
++    if (m1 == 0)
++    {
+       printf(1, "couldn't allocate mem?!!\n");
+       kill(ppid);
+       exit();
+@@ -452,7 +511,9 @@ mem(void)
+     free(m1);
+     printf(1, "mem ok\n");
+     exit();
+-  } else {
++  }
++  else
++  {
+     wait();
+   }
+ }
+@@ -461,8 +522,7 @@ mem(void)
+ 
+ // two processes write to the same file descriptor
+ // is the offset shared? does inode locking work?
+-void
+-sharedfd(void)
++void sharedfd(void)
+ {
+   int fd, pid, i, n, nc, np;
+   char buf[10];
+@@ -470,43 +530,52 @@ sharedfd(void)
+   printf(1, "sharedfd test\n");
+ 
+   unlink("sharedfd");
+-  fd = open("sharedfd", O_CREATE|O_RDWR);
+-  if(fd < 0){
++  fd = open("sharedfd", O_CREATE | O_RDWR);
++  if (fd < 0)
++  {
+     printf(1, "fstests: cannot open sharedfd for writing");
+     return;
+   }
+   pid = fork();
+-  memset(buf, pid==0?'c':'p', sizeof(buf));
+-  for(i = 0; i < 1000; i++){
+-    if(write(fd, buf, sizeof(buf)) != sizeof(buf)){
++  memset(buf, pid == 0 ? 'c' : 'p', sizeof(buf));
++  for (i = 0; i < 1000; i++)
++  {
++    if (write(fd, buf, sizeof(buf)) != sizeof(buf))
++    {
+       printf(1, "fstests: write sharedfd failed\n");
+       break;
+     }
+   }
+-  if(pid == 0)
++  if (pid == 0)
+     exit();
+   else
+     wait();
+   close(fd);
+   fd = open("sharedfd", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "fstests: cannot open sharedfd for reading\n");
+     return;
+   }
+   nc = np = 0;
+-  while((n = read(fd, buf, sizeof(buf))) > 0){
+-    for(i = 0; i < sizeof(buf); i++){
+-      if(buf[i] == 'c')
++  while ((n = read(fd, buf, sizeof(buf))) > 0)
++  {
++    for (i = 0; i < sizeof(buf); i++)
++    {
++      if (buf[i] == 'c')
+         nc++;
+-      if(buf[i] == 'p')
++      if (buf[i] == 'p')
+         np++;
+     }
+   }
+   close(fd);
+   unlink("sharedfd");
+-  if(nc == 10000 && np == 10000){
++  if (nc == 10000 && np == 10000)
++  {
+     printf(1, "sharedfd ok\n");
+-  } else {
++  }
++  else
++  {
+     printf(1, "sharedfd oops %d %d\n", nc, np);
+     exit();
+   }
+@@ -514,35 +583,40 @@ sharedfd(void)
+ 
+ // four processes write different files at the same
+ // time, to test block allocation.
+-void
+-fourfiles(void)
++void fourfiles(void)
+ {
+   int fd, pid, i, j, n, total, pi;
+-  char *names[] = { "f0", "f1", "f2", "f3" };
++  char *names[] = {"f0", "f1", "f2", "f3"};
+   char *fname;
+ 
+   printf(1, "fourfiles test\n");
+ 
+-  for(pi = 0; pi < 4; pi++){
++  for (pi = 0; pi < 4; pi++)
++  {
+     fname = names[pi];
+     unlink(fname);
+ 
+     pid = fork();
+-    if(pid < 0){
++    if (pid < 0)
++    {
+       printf(1, "fork failed\n");
+       exit();
+     }
+ 
+-    if(pid == 0){
++    if (pid == 0)
++    {
+       fd = open(fname, O_CREATE | O_RDWR);
+-      if(fd < 0){
++      if (fd < 0)
++      {
+         printf(1, "create failed\n");
+         exit();
+       }
+ 
+-      memset(buf, '0'+pi, 512);
+-      for(i = 0; i < 12; i++){
+-        if((n = write(fd, buf, 500)) != 500){
++      memset(buf, '0' + pi, 512);
++      for (i = 0; i < 12; i++)
++      {
++        if ((n = write(fd, buf, 500)) != 500)
++        {
+           printf(1, "write failed %d\n", n);
+           exit();
+         }
+@@ -551,17 +625,22 @@ fourfiles(void)
+     }
+   }
+ 
+-  for(pi = 0; pi < 4; pi++){
++  for (pi = 0; pi < 4; pi++)
++  {
+     wait();
+   }
+ 
+-  for(i = 0; i < 2; i++){
++  for (i = 0; i < 2; i++)
++  {
+     fname = names[i];
+     fd = open(fname, 0);
+     total = 0;
+-    while((n = read(fd, buf, sizeof(buf))) > 0){
+-      for(j = 0; j < n; j++){
+-        if(buf[j] != '0'+i){
++    while ((n = read(fd, buf, sizeof(buf))) > 0)
++    {
++      for (j = 0; j < n; j++)
++      {
++        if (buf[j] != '0' + i)
++        {
+           printf(1, "wrong char\n");
+           exit();
+         }
+@@ -569,7 +648,8 @@ fourfiles(void)
+       total += n;
+     }
+     close(fd);
+-    if(total != 12*500){
++    if (total != 12 * 500)
++    {
+       printf(1, "wrong length %d\n", total);
+       exit();
+     }
+@@ -580,36 +660,45 @@ fourfiles(void)
+ }
+ 
+ // four processes create and delete different files in same directory
+-void
+-createdelete(void)
++void createdelete(void)
+ {
+-  enum { N = 20 };
++  enum
++  {
++    N = 20
++  };
+   int pid, i, fd, pi;
+   char name[32];
+ 
+   printf(1, "createdelete test\n");
+ 
+-  for(pi = 0; pi < 4; pi++){
++  for (pi = 0; pi < 4; pi++)
++  {
+     pid = fork();
+-    if(pid < 0){
++    if (pid < 0)
++    {
+       printf(1, "fork failed\n");
+       exit();
+     }
+ 
+-    if(pid == 0){
++    if (pid == 0)
++    {
+       name[0] = 'p' + pi;
+       name[2] = '\0';
+-      for(i = 0; i < N; i++){
++      for (i = 0; i < N; i++)
++      {
+         name[1] = '0' + i;
+         fd = open(name, O_CREATE | O_RDWR);
+-        if(fd < 0){
++        if (fd < 0)
++        {
+           printf(1, "create failed\n");
+           exit();
+         }
+         close(fd);
+-        if(i > 0 && (i % 2 ) == 0){
++        if (i > 0 && (i % 2) == 0)
++        {
+           name[1] = '0' + (i / 2);
+-          if(unlink(name) < 0){
++          if (unlink(name) < 0)
++          {
+             printf(1, "unlink failed\n");
+             exit();
+           }
+@@ -619,30 +708,38 @@ createdelete(void)
+     }
+   }
+ 
+-  for(pi = 0; pi < 4; pi++){
++  for (pi = 0; pi < 4; pi++)
++  {
+     wait();
+   }
+ 
+   name[0] = name[1] = name[2] = 0;
+-  for(i = 0; i < N; i++){
+-    for(pi = 0; pi < 4; pi++){
++  for (i = 0; i < N; i++)
++  {
++    for (pi = 0; pi < 4; pi++)
++    {
+       name[0] = 'p' + pi;
+       name[1] = '0' + i;
+       fd = open(name, 0);
+-      if((i == 0 || i >= N/2) && fd < 0){
++      if ((i == 0 || i >= N / 2) && fd < 0)
++      {
+         printf(1, "oops createdelete %s didn't exist\n", name);
+         exit();
+-      } else if((i >= 1 && i < N/2) && fd >= 0){
++      }
++      else if ((i >= 1 && i < N / 2) && fd >= 0)
++      {
+         printf(1, "oops createdelete %s did exist\n", name);
+         exit();
+       }
+-      if(fd >= 0)
++      if (fd >= 0)
+         close(fd);
+     }
+   }
+ 
+-  for(i = 0; i < N; i++){
+-    for(pi = 0; pi < 4; pi++){
++  for (i = 0; i < N; i++)
++  {
++    for (pi = 0; pi < 4; pi++)
++    {
+       name[0] = 'p' + i;
+       name[1] = '0' + i;
+       unlink(name);
+@@ -653,14 +750,14 @@ createdelete(void)
+ }
+ 
+ // can I unlink a file and still read it?
+-void
+-unlinkread(void)
++void unlinkread(void)
+ {
+   int fd, fd1;
+ 
+   printf(1, "unlinkread test\n");
+   fd = open("unlinkread", O_CREATE | O_RDWR);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "create unlinkread failed\n");
+     exit();
+   }
+@@ -668,11 +765,13 @@ unlinkread(void)
+   close(fd);
+ 
+   fd = open("unlinkread", O_RDWR);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "open unlinkread failed\n");
+     exit();
+   }
+-  if(unlink("unlinkread") != 0){
++  if (unlink("unlinkread") != 0)
++  {
+     printf(1, "unlink unlinkread failed\n");
+     exit();
+   }
+@@ -681,15 +780,18 @@ unlinkread(void)
+   write(fd1, "yyy", 3);
+   close(fd1);
+ 
+-  if(read(fd, buf, sizeof(buf)) != 5){
++  if (read(fd, buf, sizeof(buf)) != 5)
++  {
+     printf(1, "unlinkread read failed");
+     exit();
+   }
+-  if(buf[0] != 'h'){
++  if (buf[0] != 'h')
++  {
+     printf(1, "unlinkread wrong data\n");
+     exit();
+   }
+-  if(write(fd, buf, 10) != 10){
++  if (write(fd, buf, 10) != 10)
++  {
+     printf(1, "unlinkread write failed\n");
+     exit();
+   }
+@@ -698,8 +800,7 @@ unlinkread(void)
+   printf(1, "unlinkread ok\n");
+ }
+ 
+-void
+-linktest(void)
++void linktest(void)
+ {
+   int fd;
+ 
+@@ -708,51 +809,60 @@ linktest(void)
+   unlink("lf1");
+   unlink("lf2");
+ 
+-  fd = open("lf1", O_CREATE|O_RDWR);
+-  if(fd < 0){
++  fd = open("lf1", O_CREATE | O_RDWR);
++  if (fd < 0)
++  {
+     printf(1, "create lf1 failed\n");
+     exit();
+   }
+-  if(write(fd, "hello", 5) != 5){
++  if (write(fd, "hello", 5) != 5)
++  {
+     printf(1, "write lf1 failed\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(link("lf1", "lf2") < 0){
++  if (link("lf1", "lf2") < 0)
++  {
+     printf(1, "link lf1 lf2 failed\n");
+     exit();
+   }
+   unlink("lf1");
+ 
+-  if(open("lf1", 0) >= 0){
++  if (open("lf1", 0) >= 0)
++  {
+     printf(1, "unlinked lf1 but it is still there!\n");
+     exit();
+   }
+ 
+   fd = open("lf2", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "open lf2 failed\n");
+     exit();
+   }
+-  if(read(fd, buf, sizeof(buf)) != 5){
++  if (read(fd, buf, sizeof(buf)) != 5)
++  {
+     printf(1, "read lf2 failed\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(link("lf2", "lf2") >= 0){
++  if (link("lf2", "lf2") >= 0)
++  {
+     printf(1, "link lf2 lf2 succeeded! oops\n");
+     exit();
+   }
+ 
+   unlink("lf2");
+-  if(link("lf2", "lf1") >= 0){
++  if (link("lf2", "lf1") >= 0)
++  {
+     printf(1, "link non-existant succeeded! oops\n");
+     exit();
+   }
+ 
+-  if(link(".", "lf1") >= 0){
++  if (link(".", "lf1") >= 0)
++  {
+     printf(1, "link . lf1 succeeded! oops\n");
+     exit();
+   }
+@@ -761,13 +871,13 @@ linktest(void)
+ }
+ 
+ // test concurrent create/link/unlink of the same file
+-void
+-concreate(void)
++void concreate(void)
+ {
+   char file[3];
+   int i, pid, n, fd;
+   char fa[40];
+-  struct {
++  struct
++  {
+     ushort inum;
+     char name[14];
+   } de;
+@@ -775,23 +885,30 @@ concreate(void)
+   printf(1, "concreate test\n");
+   file[0] = 'C';
+   file[2] = '\0';
+-  for(i = 0; i < 40; i++){
++  for (i = 0; i < 40; i++)
++  {
+     file[1] = '0' + i;
+     unlink(file);
+     pid = fork();
+-    if(pid && (i % 3) == 1){
++    if (pid && (i % 3) == 1)
++    {
+       link("C0", file);
+-    } else if(pid == 0 && (i % 5) == 1){
++    }
++    else if (pid == 0 && (i % 5) == 1)
++    {
+       link("C0", file);
+-    } else {
++    }
++    else
++    {
+       fd = open(file, O_CREATE | O_RDWR);
+-      if(fd < 0){
++      if (fd < 0)
++      {
+         printf(1, "concreate create %s failed\n", file);
+         exit();
+       }
+       close(fd);
+     }
+-    if(pid == 0)
++    if (pid == 0)
+       exit();
+     else
+       wait();
+@@ -800,16 +917,20 @@ concreate(void)
+   memset(fa, 0, sizeof(fa));
+   fd = open(".", 0);
+   n = 0;
+-  while(read(fd, &de, sizeof(de)) > 0){
+-    if(de.inum == 0)
++  while (read(fd, &de, sizeof(de)) > 0)
++  {
++    if (de.inum == 0)
+       continue;
+-    if(de.name[0] == 'C' && de.name[2] == '\0'){
++    if (de.name[0] == 'C' && de.name[2] == '\0')
++    {
+       i = de.name[1] - '0';
+-      if(i < 0 || i >= sizeof(fa)){
++      if (i < 0 || i >= sizeof(fa))
++      {
+         printf(1, "concreate weird file %s\n", de.name);
+         exit();
+       }
+-      if(fa[i]){
++      if (fa[i])
++      {
+         printf(1, "concreate duplicate file %s\n", de.name);
+         exit();
+       }
+@@ -819,31 +940,37 @@ concreate(void)
+   }
+   close(fd);
+ 
+-  if(n != 40){
++  if (n != 40)
++  {
+     printf(1, "concreate not enough files in directory listing\n");
+     exit();
+   }
+ 
+-  for(i = 0; i < 40; i++){
++  for (i = 0; i < 40; i++)
++  {
+     file[1] = '0' + i;
+     pid = fork();
+-    if(pid < 0){
++    if (pid < 0)
++    {
+       printf(1, "fork failed\n");
+       exit();
+     }
+-    if(((i % 3) == 0 && pid == 0) ||
+-       ((i % 3) == 1 && pid != 0)){
++    if (((i % 3) == 0 && pid == 0) ||
++        ((i % 3) == 1 && pid != 0))
++    {
+       close(open(file, 0));
+       close(open(file, 0));
+       close(open(file, 0));
+       close(open(file, 0));
+-    } else {
++    }
++    else
++    {
+       unlink(file);
+       unlink(file);
+       unlink(file);
+       unlink(file);
+     }
+-    if(pid == 0)
++    if (pid == 0)
+       exit();
+     else
+       wait();
+@@ -854,8 +981,7 @@ concreate(void)
+ 
+ // another concurrent link/unlink/create test,
+ // to look for deadlocks.
+-void
+-linkunlink()
++void linkunlink()
+ {
+   int pid, i;
+ 
+@@ -863,24 +989,31 @@ linkunlink()
+ 
+   unlink("x");
+   pid = fork();
+-  if(pid < 0){
++  if (pid < 0)
++  {
+     printf(1, "fork failed\n");
+     exit();
+   }
+ 
+   unsigned int x = (pid ? 1 : 97);
+-  for(i = 0; i < 100; i++){
++  for (i = 0; i < 100; i++)
++  {
+     x = x * 1103515245 + 12345;
+-    if((x % 3) == 0){
++    if ((x % 3) == 0)
++    {
+       close(open("x", O_RDWR | O_CREATE));
+-    } else if((x % 3) == 1){
++    }
++    else if ((x % 3) == 1)
++    {
+       link("cat", "x");
+-    } else {
++    }
++    else
++    {
+       unlink("x");
+     }
+   }
+ 
+-  if(pid)
++  if (pid)
+     wait();
+   else
+     exit();
+@@ -889,8 +1022,7 @@ linkunlink()
+ }
+ 
+ // directory that uses indirect blocks
+-void
+-bigdir(void)
++void bigdir(void)
+ {
+   int i, fd;
+   char name[10];
+@@ -899,30 +1031,35 @@ bigdir(void)
+   unlink("bd");
+ 
+   fd = open("bd", O_CREATE);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "bigdir create failed\n");
+     exit();
+   }
+   close(fd);
+ 
+-  for(i = 0; i < 500; i++){
++  for (i = 0; i < 500; i++)
++  {
+     name[0] = 'x';
+     name[1] = '0' + (i / 64);
+     name[2] = '0' + (i % 64);
+     name[3] = '\0';
+-    if(link("bd", name) != 0){
++    if (link("bd", name) != 0)
++    {
+       printf(1, "bigdir link failed\n");
+       exit();
+     }
+   }
+ 
+   unlink("bd");
+-  for(i = 0; i < 500; i++){
++  for (i = 0; i < 500; i++)
++  {
+     name[0] = 'x';
+     name[1] = '0' + (i / 64);
+     name[2] = '0' + (i % 64);
+     name[3] = '\0';
+-    if(unlink(name) != 0){
++    if (unlink(name) != 0)
++    {
+       printf(1, "bigdir unlink failed");
+       exit();
+     }
+@@ -931,39 +1068,43 @@ bigdir(void)
+   printf(1, "bigdir ok\n");
+ }
+ 
+-void
+-subdir(void)
++void subdir(void)
+ {
+   int fd, cc;
+ 
+   printf(1, "subdir test\n");
+ 
+   unlink("ff");
+-  if(mkdir("dd") != 0){
++  if (mkdir("dd") != 0)
++  {
+     printf(1, "subdir mkdir dd failed\n");
+     exit();
+   }
+ 
+   fd = open("dd/ff", O_CREATE | O_RDWR);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "create dd/ff failed\n");
+     exit();
+   }
+   write(fd, "ff", 2);
+   close(fd);
+ 
+-  if(unlink("dd") >= 0){
++  if (unlink("dd") >= 0)
++  {
+     printf(1, "unlink dd (non-empty dir) succeeded!\n");
+     exit();
+   }
+ 
+-  if(mkdir("/dd/dd") != 0){
++  if (mkdir("/dd/dd") != 0)
++  {
+     printf(1, "subdir mkdir dd/dd failed\n");
+     exit();
+   }
+ 
+   fd = open("dd/dd/ff", O_CREATE | O_RDWR);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "create dd/dd/ff failed\n");
+     exit();
+   }
+@@ -971,142 +1112,174 @@ subdir(void)
+   close(fd);
+ 
+   fd = open("dd/dd/../ff", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "open dd/dd/../ff failed\n");
+     exit();
+   }
+   cc = read(fd, buf, sizeof(buf));
+-  if(cc != 2 || buf[0] != 'f'){
++  if (cc != 2 || buf[0] != 'f')
++  {
+     printf(1, "dd/dd/../ff wrong content\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(link("dd/dd/ff", "dd/dd/ffff") != 0){
++  if (link("dd/dd/ff", "dd/dd/ffff") != 0)
++  {
+     printf(1, "link dd/dd/ff dd/dd/ffff failed\n");
+     exit();
+   }
+ 
+-  if(unlink("dd/dd/ff") != 0){
++  if (unlink("dd/dd/ff") != 0)
++  {
+     printf(1, "unlink dd/dd/ff failed\n");
+     exit();
+   }
+-  if(open("dd/dd/ff", O_RDONLY) >= 0){
++  if (open("dd/dd/ff", O_RDONLY) >= 0)
++  {
+     printf(1, "open (unlinked) dd/dd/ff succeeded\n");
+     exit();
+   }
+ 
+-  if(chdir("dd") != 0){
++  if (chdir("dd") != 0)
++  {
+     printf(1, "chdir dd failed\n");
+     exit();
+   }
+-  if(chdir("dd/../../dd") != 0){
++  if (chdir("dd/../../dd") != 0)
++  {
+     printf(1, "chdir dd/../../dd failed\n");
+     exit();
+   }
+-  if(chdir("dd/../../../dd") != 0){
++  if (chdir("dd/../../../dd") != 0)
++  {
+     printf(1, "chdir dd/../../dd failed\n");
+     exit();
+   }
+-  if(chdir("./..") != 0){
++  if (chdir("./..") != 0)
++  {
+     printf(1, "chdir ./.. failed\n");
+     exit();
+   }
+ 
+   fd = open("dd/dd/ffff", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "open dd/dd/ffff failed\n");
+     exit();
+   }
+-  if(read(fd, buf, sizeof(buf)) != 2){
++  if (read(fd, buf, sizeof(buf)) != 2)
++  {
+     printf(1, "read dd/dd/ffff wrong len\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(open("dd/dd/ff", O_RDONLY) >= 0){
++  if (open("dd/dd/ff", O_RDONLY) >= 0)
++  {
+     printf(1, "open (unlinked) dd/dd/ff succeeded!\n");
+     exit();
+   }
+ 
+-  if(open("dd/ff/ff", O_CREATE|O_RDWR) >= 0){
++  if (open("dd/ff/ff", O_CREATE | O_RDWR) >= 0)
++  {
+     printf(1, "create dd/ff/ff succeeded!\n");
+     exit();
+   }
+-  if(open("dd/xx/ff", O_CREATE|O_RDWR) >= 0){
++  if (open("dd/xx/ff", O_CREATE | O_RDWR) >= 0)
++  {
+     printf(1, "create dd/xx/ff succeeded!\n");
+     exit();
+   }
+-  if(open("dd", O_CREATE) >= 0){
++  if (open("dd", O_CREATE) >= 0)
++  {
+     printf(1, "create dd succeeded!\n");
+     exit();
+   }
+-  if(open("dd", O_RDWR) >= 0){
++  if (open("dd", O_RDWR) >= 0)
++  {
+     printf(1, "open dd rdwr succeeded!\n");
+     exit();
+   }
+-  if(open("dd", O_WRONLY) >= 0){
++  if (open("dd", O_WRONLY) >= 0)
++  {
+     printf(1, "open dd wronly succeeded!\n");
+     exit();
+   }
+-  if(link("dd/ff/ff", "dd/dd/xx") == 0){
++  if (link("dd/ff/ff", "dd/dd/xx") == 0)
++  {
+     printf(1, "link dd/ff/ff dd/dd/xx succeeded!\n");
+     exit();
+   }
+-  if(link("dd/xx/ff", "dd/dd/xx") == 0){
++  if (link("dd/xx/ff", "dd/dd/xx") == 0)
++  {
+     printf(1, "link dd/xx/ff dd/dd/xx succeeded!\n");
+     exit();
+   }
+-  if(link("dd/ff", "dd/dd/ffff") == 0){
++  if (link("dd/ff", "dd/dd/ffff") == 0)
++  {
+     printf(1, "link dd/ff dd/dd/ffff succeeded!\n");
+     exit();
+   }
+-  if(mkdir("dd/ff/ff") == 0){
++  if (mkdir("dd/ff/ff") == 0)
++  {
+     printf(1, "mkdir dd/ff/ff succeeded!\n");
+     exit();
+   }
+-  if(mkdir("dd/xx/ff") == 0){
++  if (mkdir("dd/xx/ff") == 0)
++  {
+     printf(1, "mkdir dd/xx/ff succeeded!\n");
+     exit();
+   }
+-  if(mkdir("dd/dd/ffff") == 0){
++  if (mkdir("dd/dd/ffff") == 0)
++  {
+     printf(1, "mkdir dd/dd/ffff succeeded!\n");
+     exit();
+   }
+-  if(unlink("dd/xx/ff") == 0){
++  if (unlink("dd/xx/ff") == 0)
++  {
+     printf(1, "unlink dd/xx/ff succeeded!\n");
+     exit();
+   }
+-  if(unlink("dd/ff/ff") == 0){
++  if (unlink("dd/ff/ff") == 0)
++  {
+     printf(1, "unlink dd/ff/ff succeeded!\n");
+     exit();
+   }
+-  if(chdir("dd/ff") == 0){
++  if (chdir("dd/ff") == 0)
++  {
+     printf(1, "chdir dd/ff succeeded!\n");
+     exit();
+   }
+-  if(chdir("dd/xx") == 0){
++  if (chdir("dd/xx") == 0)
++  {
+     printf(1, "chdir dd/xx succeeded!\n");
+     exit();
+   }
+ 
+-  if(unlink("dd/dd/ffff") != 0){
++  if (unlink("dd/dd/ffff") != 0)
++  {
+     printf(1, "unlink dd/dd/ff failed\n");
+     exit();
+   }
+-  if(unlink("dd/ff") != 0){
++  if (unlink("dd/ff") != 0)
++  {
+     printf(1, "unlink dd/ff failed\n");
+     exit();
+   }
+-  if(unlink("dd") == 0){
++  if (unlink("dd") == 0)
++  {
+     printf(1, "unlink non-empty dd succeeded!\n");
+     exit();
+   }
+-  if(unlink("dd/dd") < 0){
++  if (unlink("dd/dd") < 0)
++  {
+     printf(1, "unlink dd/dd failed\n");
+     exit();
+   }
+-  if(unlink("dd") < 0){
++  if (unlink("dd") < 0)
++  {
+     printf(1, "unlink dd failed\n");
+     exit();
+   }
+@@ -1115,24 +1288,27 @@ subdir(void)
+ }
+ 
+ // test writes that are larger than the log.
+-void
+-bigwrite(void)
++void bigwrite(void)
+ {
+   int fd, sz;
+ 
+   printf(1, "bigwrite test\n");
+ 
+   unlink("bigwrite");
+-  for(sz = 499; sz < 12*512; sz += 471){
++  for (sz = 499; sz < 12 * 512; sz += 471)
++  {
+     fd = open("bigwrite", O_CREATE | O_RDWR);
+-    if(fd < 0){
++    if (fd < 0)
++    {
+       printf(1, "cannot create bigwrite\n");
+       exit();
+     }
+     int i;
+-    for(i = 0; i < 2; i++){
++    for (i = 0; i < 2; i++)
++    {
+       int cc = write(fd, buf, sz);
+-      if(cc != sz){
++      if (cc != sz)
++      {
+         printf(1, "write(%d) ret %d\n", sz, cc);
+         exit();
+       }
+@@ -1144,8 +1320,7 @@ bigwrite(void)
+   printf(1, "bigwrite ok\n");
+ }
+ 
+-void
+-bigfile(void)
++void bigfile(void)
+ {
+   int fd, i, total, cc;
+ 
+@@ -1153,13 +1328,16 @@ bigfile(void)
+ 
+   unlink("bigfile");
+   fd = open("bigfile", O_CREATE | O_RDWR);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "cannot create bigfile");
+     exit();
+   }
+-  for(i = 0; i < 20; i++){
++  for (i = 0; i < 20; i++)
++  {
+     memset(buf, i, 600);
+-    if(write(fd, buf, 600) != 600){
++    if (write(fd, buf, 600) != 600)
++    {
+       printf(1, "write bigfile failed\n");
+       exit();
+     }
+@@ -1167,31 +1345,37 @@ bigfile(void)
+   close(fd);
+ 
+   fd = open("bigfile", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "cannot open bigfile\n");
+     exit();
+   }
+   total = 0;
+-  for(i = 0; ; i++){
++  for (i = 0;; i++)
++  {
+     cc = read(fd, buf, 300);
+-    if(cc < 0){
++    if (cc < 0)
++    {
+       printf(1, "read bigfile failed\n");
+       exit();
+     }
+-    if(cc == 0)
++    if (cc == 0)
+       break;
+-    if(cc != 300){
++    if (cc != 300)
++    {
+       printf(1, "short read bigfile\n");
+       exit();
+     }
+-    if(buf[0] != i/2 || buf[299] != i/2){
++    if (buf[0] != i / 2 || buf[299] != i / 2)
++    {
+       printf(1, "read bigfile wrong data\n");
+       exit();
+     }
+     total += cc;
+   }
+   close(fd);
+-  if(total != 20*600){
++  if (total != 20 * 600)
++  {
+     printf(1, "read bigfile wrong total\n");
+     exit();
+   }
+@@ -1200,40 +1384,45 @@ bigfile(void)
+   printf(1, "bigfile test ok\n");
+ }
+ 
+-void
+-fourteen(void)
++void fourteen(void)
+ {
+   int fd;
+ 
+   // DIRSIZ is 14.
+   printf(1, "fourteen test\n");
+ 
+-  if(mkdir("12345678901234") != 0){
++  if (mkdir("12345678901234") != 0)
++  {
+     printf(1, "mkdir 12345678901234 failed\n");
+     exit();
+   }
+-  if(mkdir("12345678901234/123456789012345") != 0){
++  if (mkdir("12345678901234/123456789012345") != 0)
++  {
+     printf(1, "mkdir 12345678901234/123456789012345 failed\n");
+     exit();
+   }
+   fd = open("123456789012345/123456789012345/123456789012345", O_CREATE);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "create 123456789012345/123456789012345/123456789012345 failed\n");
+     exit();
+   }
+   close(fd);
+   fd = open("12345678901234/12345678901234/12345678901234", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "open 12345678901234/12345678901234/12345678901234 failed\n");
+     exit();
+   }
+   close(fd);
+ 
+-  if(mkdir("12345678901234/12345678901234") == 0){
++  if (mkdir("12345678901234/12345678901234") == 0)
++  {
+     printf(1, "mkdir 12345678901234/12345678901234 succeeded!\n");
+     exit();
+   }
+-  if(mkdir("123456789012345/12345678901234") == 0){
++  if (mkdir("123456789012345/12345678901234") == 0)
++  {
+     printf(1, "mkdir 12345678901234/123456789012345 succeeded!\n");
+     exit();
+   }
+@@ -1241,96 +1430,112 @@ fourteen(void)
+   printf(1, "fourteen ok\n");
+ }
+ 
+-void
+-rmdot(void)
++void rmdot(void)
+ {
+   printf(1, "rmdot test\n");
+-  if(mkdir("dots") != 0){
++  if (mkdir("dots") != 0)
++  {
+     printf(1, "mkdir dots failed\n");
+     exit();
+   }
+-  if(chdir("dots") != 0){
++  if (chdir("dots") != 0)
++  {
+     printf(1, "chdir dots failed\n");
+     exit();
+   }
+-  if(unlink(".") == 0){
++  if (unlink(".") == 0)
++  {
+     printf(1, "rm . worked!\n");
+     exit();
+   }
+-  if(unlink("..") == 0){
++  if (unlink("..") == 0)
++  {
+     printf(1, "rm .. worked!\n");
+     exit();
+   }
+-  if(chdir("/") != 0){
++  if (chdir("/") != 0)
++  {
+     printf(1, "chdir / failed\n");
+     exit();
+   }
+-  if(unlink("dots/.") == 0){
++  if (unlink("dots/.") == 0)
++  {
+     printf(1, "unlink dots/. worked!\n");
+     exit();
+   }
+-  if(unlink("dots/..") == 0){
++  if (unlink("dots/..") == 0)
++  {
+     printf(1, "unlink dots/.. worked!\n");
+     exit();
+   }
+-  if(unlink("dots") != 0){
++  if (unlink("dots") != 0)
++  {
+     printf(1, "unlink dots failed!\n");
+     exit();
+   }
+   printf(1, "rmdot ok\n");
+ }
+ 
+-void
+-dirfile(void)
++void dirfile(void)
+ {
+   int fd;
+ 
+   printf(1, "dir vs file\n");
+ 
+   fd = open("dirfile", O_CREATE);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(1, "create dirfile failed\n");
+     exit();
+   }
+   close(fd);
+-  if(chdir("dirfile") == 0){
++  if (chdir("dirfile") == 0)
++  {
+     printf(1, "chdir dirfile succeeded!\n");
+     exit();
+   }
+   fd = open("dirfile/xx", 0);
+-  if(fd >= 0){
++  if (fd >= 0)
++  {
+     printf(1, "create dirfile/xx succeeded!\n");
+     exit();
+   }
+   fd = open("dirfile/xx", O_CREATE);
+-  if(fd >= 0){
++  if (fd >= 0)
++  {
+     printf(1, "create dirfile/xx succeeded!\n");
+     exit();
+   }
+-  if(mkdir("dirfile/xx") == 0){
++  if (mkdir("dirfile/xx") == 0)
++  {
+     printf(1, "mkdir dirfile/xx succeeded!\n");
+     exit();
+   }
+-  if(unlink("dirfile/xx") == 0){
++  if (unlink("dirfile/xx") == 0)
++  {
+     printf(1, "unlink dirfile/xx succeeded!\n");
+     exit();
+   }
+-  if(link("README", "dirfile/xx") == 0){
++  if (link("README", "dirfile/xx") == 0)
++  {
+     printf(1, "link to dirfile/xx succeeded!\n");
+     exit();
+   }
+-  if(unlink("dirfile") != 0){
++  if (unlink("dirfile") != 0)
++  {
+     printf(1, "unlink dirfile failed!\n");
+     exit();
+   }
+ 
+   fd = open(".", O_RDWR);
+-  if(fd >= 0){
++  if (fd >= 0)
++  {
+     printf(1, "open . for writing succeeded!\n");
+     exit();
+   }
+   fd = open(".", 0);
+-  if(write(fd, "x", 1) > 0){
++  if (write(fd, "x", 1) > 0)
++  {
+     printf(1, "write . succeeded!\n");
+     exit();
+   }
+@@ -1340,20 +1545,22 @@ dirfile(void)
+ }
+ 
+ // test that iput() is called at the end of _namei()
+-void
+-iref(void)
++void iref(void)
+ {
+   int i, fd;
+ 
+   printf(1, "empty file name\n");
+ 
+   // the 50 is NINODE
+-  for(i = 0; i < 50 + 1; i++){
+-    if(mkdir("irefd") != 0){
++  for (i = 0; i < 50 + 1; i++)
++  {
++    if (mkdir("irefd") != 0)
++    {
+       printf(1, "mkdir irefd failed\n");
+       exit();
+     }
+-    if(chdir("irefd") != 0){
++    if (chdir("irefd") != 0)
++    {
+       printf(1, "chdir irefd failed\n");
+       exit();
+     }
+@@ -1361,10 +1568,10 @@ iref(void)
+     mkdir("");
+     link("README", "");
+     fd = open("", O_CREATE);
+-    if(fd >= 0)
++    if (fd >= 0)
+       close(fd);
+     fd = open("xx", O_CREATE);
+-    if(fd >= 0)
++    if (fd >= 0)
+       close(fd);
+     unlink("xx");
+   }
+@@ -1376,34 +1583,38 @@ iref(void)
+ // test that fork fails gracefully
+ // the forktest binary also does this, but it runs out of proc entries first.
+ // inside the bigger usertests binary, we run out of memory first.
+-void
+-forktest(void)
++void forktest(void)
+ {
+   int n, pid;
+ 
+   printf(1, "fork test\n");
+ 
+-  for(n=0; n<1000; n++){
++  for (n = 0; n < 1000; n++)
++  {
+     pid = fork();
+-    if(pid < 0)
++    if (pid < 0)
+       break;
+-    if(pid == 0)
++    if (pid == 0)
+       exit();
+   }
+ 
+-  if(n == 1000){
++  if (n == 1000)
++  {
+     printf(1, "fork claimed to work 1000 times!\n");
+     exit();
+   }
+ 
+-  for(; n > 0; n--){
+-    if(wait() < 0){
++  for (; n > 0; n--)
++  {
++    if (wait() < 0)
++    {
+       printf(1, "wait stopped early\n");
+       exit();
+     }
+   }
+ 
+-  if(wait() != -1){
++  if (wait() != -1)
++  {
+     printf(1, "wait got too many\n");
+     exit();
+   }
+@@ -1411,8 +1622,7 @@ forktest(void)
+   printf(1, "fork test OK\n");
+ }
+ 
+-void
+-sbrktest(void)
++void sbrktest(void)
+ {
+   int fds[2], pid, pids[10], ppid;
+   char *a, *b, *c, *lastaddr, *oldbrk, *p, scratch;
+@@ -1424,9 +1634,11 @@ sbrktest(void)
+   // can one sbrk() less than a page?
+   a = sbrk(0);
+   int i;
+-  for(i = 0; i < 5000; i++){
++  for (i = 0; i < 5000; i++)
++  {
+     b = sbrk(1);
+-    if(b != a){
++    if (b != a)
++    {
+       printf(stdout, "sbrk test failed %d %x %x\n", i, a, b);
+       exit();
+     }
+@@ -1434,41 +1646,46 @@ sbrktest(void)
+     a = b + 1;
+   }
+   pid = fork();
+-  if(pid < 0){
++  if (pid < 0)
++  {
+     printf(stdout, "sbrk test fork failed\n");
+     exit();
+   }
+   c = sbrk(1);
+   c = sbrk(1);
+-  if(c != a + 1){
++  if (c != a + 1)
++  {
+     printf(stdout, "sbrk test failed post-fork\n");
+     exit();
+   }
+-  if(pid == 0)
++  if (pid == 0)
+     exit();
+   wait();
+ 
+   // can one grow address space to something big?
+-#define BIG (100*1024*1024)
++#define BIG (100 * 1024 * 1024)
+   a = sbrk(0);
+   amt = (BIG) - (uint)a;
+   p = sbrk(amt);
+-  if (p != a) {
++  if (p != a)
++  {
+     printf(stdout, "sbrk test failed to grow big address space; enough phys mem?\n");
+     exit();
+   }
+-  lastaddr = (char*) (BIG-1);
++  lastaddr = (char *)(BIG - 1);
+   *lastaddr = 99;
+ 
+   // can one de-allocate?
+   a = sbrk(0);
+   c = sbrk(-4096);
+-  if(c == (char*)0xffffffff){
++  if (c == (char *)0xffffffff)
++  {
+     printf(stdout, "sbrk could not deallocate\n");
+     exit();
+   }
+   c = sbrk(0);
+-  if(c != a - 4096){
++  if (c != a - 4096)
++  {
+     printf(stdout, "sbrk deallocation produced wrong address, a %x c %x\n", a, c);
+     exit();
+   }
+@@ -1476,11 +1693,13 @@ sbrktest(void)
+   // can one re-allocate that page?
+   a = sbrk(0);
+   c = sbrk(4096);
+-  if(c != a || sbrk(0) != a + 4096){
++  if (c != a || sbrk(0) != a + 4096)
++  {
+     printf(stdout, "sbrk re-allocation failed, a %x c %x\n", a, c);
+     exit();
+   }
+-  if(*lastaddr == 99){
++  if (*lastaddr == 99)
++  {
+     // should be zero
+     printf(stdout, "sbrk de-allocation didn't really deallocate\n");
+     exit();
+@@ -1488,20 +1707,24 @@ sbrktest(void)
+ 
+   a = sbrk(0);
+   c = sbrk(-(sbrk(0) - oldbrk));
+-  if(c != a){
++  if (c != a)
++  {
+     printf(stdout, "sbrk downsize failed, a %x c %x\n", a, c);
+     exit();
+   }
+ 
+   // can we read the kernel's memory?
+-  for(a = (char*)(KERNBASE); a < (char*) (KERNBASE+2000000); a += 50000){
++  for (a = (char *)(KERNBASE); a < (char *)(KERNBASE + 2000000); a += 50000)
++  {
+     ppid = getpid();
+     pid = fork();
+-    if(pid < 0){
++    if (pid < 0)
++    {
+       printf(stdout, "fork failed\n");
+       exit();
+     }
+-    if(pid == 0){
++    if (pid == 0)
++    {
+       printf(stdout, "oops could read %x = %x\n", a, *a);
+       kill(ppid);
+       exit();
+@@ -1511,67 +1734,73 @@ sbrktest(void)
+ 
+   // if we run the system out of memory, does it clean up the last
+   // failed allocation?
+-  if(pipe(fds) != 0){
++  if (pipe(fds) != 0)
++  {
+     printf(1, "pipe() failed\n");
+     exit();
+   }
+-  for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
+-    if((pids[i] = fork()) == 0){
++  for (i = 0; i < sizeof(pids) / sizeof(pids[0]); i++)
++  {
++    if ((pids[i] = fork()) == 0)
++    {
+       // allocate a lot of memory
+       sbrk(BIG - (uint)sbrk(0));
+       write(fds[1], "x", 1);
+       // sit around until killed
+-      for(;;) sleep(1000);
++      for (;;)
++        sleep(1000);
+     }
+-    if(pids[i] != -1)
++    if (pids[i] != -1)
+       read(fds[0], &scratch, 1);
+   }
+   // if those failed allocations freed up the pages they did allocate,
+   // we'll be able to allocate here
+   c = sbrk(4096);
+-  for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
+-    if(pids[i] == -1)
++  for (i = 0; i < sizeof(pids) / sizeof(pids[0]); i++)
++  {
++    if (pids[i] == -1)
+       continue;
+     kill(pids[i]);
+     wait();
+   }
+-  if(c == (char*)0xffffffff){
++  if (c == (char *)0xffffffff)
++  {
+     printf(stdout, "failed sbrk leaked memory\n");
+     exit();
+   }
+ 
+-  if(sbrk(0) > oldbrk)
++  if (sbrk(0) > oldbrk)
+     sbrk(-(sbrk(0) - oldbrk));
+ 
+   printf(stdout, "sbrk test OK\n");
+ }
+ 
+-void
+-validateint(int *p)
++void validateint(int *p)
+ {
+   int res;
+   asm("mov %%esp, %%ebx\n\t"
+       "mov %3, %%esp\n\t"
+       "int %2\n\t"
+-      "mov %%ebx, %%esp" :
+-      "=a" (res) :
+-      "a" (SYS_sleep), "n" (T_SYSCALL), "c" (p) :
+-      "ebx");
++      "mov %%ebx, %%esp"
++      : "=a"(res)
++      : "a"(SYS_sleep), "n"(T_SYSCALL), "c"(p)
++      : "ebx");
+ }
+ 
+-void
+-validatetest(void)
++void validatetest(void)
+ {
+   int hi, pid;
+   uint p;
+ 
+   printf(stdout, "validate test\n");
+-  hi = 1100*1024;
++  hi = 1100 * 1024;
+ 
+-  for(p = 0; p <= (uint)hi; p += 4096){
+-    if((pid = fork()) == 0){
++  for (p = 0; p <= (uint)hi; p += 4096)
++  {
++    if ((pid = fork()) == 0)
++    {
+       // try to crash the kernel by passing in a badly placed integer
+-      validateint((int*)p);
++      validateint((int *)p);
+       exit();
+     }
+     sleep(0);
+@@ -1580,7 +1809,8 @@ validatetest(void)
+     wait();
+ 
+     // try to crash the kernel by passing in a bad string pointer
+-    if(link("nosuchfile", (char*)p) != -1){
++    if (link("nosuchfile", (char *)p) != -1)
++    {
+       printf(stdout, "link should not succeed\n");
+       exit();
+     }
+@@ -1591,14 +1821,15 @@ validatetest(void)
+ 
+ // does unintialized data start out zero?
+ char uninit[10000];
+-void
+-bsstest(void)
++void bsstest(void)
+ {
+   int i;
+ 
+   printf(stdout, "bss test\n");
+-  for(i = 0; i < sizeof(uninit); i++){
+-    if(uninit[i] != '\0'){
++  for (i = 0; i < sizeof(uninit); i++)
++  {
++    if (uninit[i] != '\0')
++    {
+       printf(stdout, "bss test failed\n");
+       exit();
+     }
+@@ -1609,32 +1840,35 @@ bsstest(void)
+ // does exec return an error if the arguments
+ // are larger than a page? or does it write
+ // below the stack and wreck the instructions/data?
+-void
+-bigargtest(void)
++void bigargtest(void)
+ {
+   int pid, fd;
+ 
+   unlink("bigarg-ok");
+   pid = fork();
+-  if(pid == 0){
++  if (pid == 0)
++  {
+     static char *args[MAXARG];
+     int i;
+-    for(i = 0; i < MAXARG-1; i++)
++    for (i = 0; i < MAXARG - 1; i++)
+       args[i] = "bigargs test: failed\n                                                                                                                                                                                                       ";
+-    args[MAXARG-1] = 0;
++    args[MAXARG - 1] = 0;
+     printf(stdout, "bigarg test\n");
+     exec("echo", args);
+     printf(stdout, "bigarg test ok\n");
+     fd = open("bigarg-ok", O_CREATE);
+     close(fd);
+     exit();
+-  } else if(pid < 0){
++  }
++  else if (pid < 0)
++  {
+     printf(stdout, "bigargtest: fork failed\n");
+     exit();
+   }
+   wait();
+   fd = open("bigarg-ok", 0);
+-  if(fd < 0){
++  if (fd < 0)
++  {
+     printf(stdout, "bigarg test failed!\n");
+     exit();
+   }
+@@ -1644,15 +1878,15 @@ bigargtest(void)
+ 
+ // what happens when the file system runs out of blocks?
+ // answer: balloc panics, so this test is not useful.
+-void
+-fsfull()
++void fsfull()
+ {
+   int nfiles;
+   int fsblocks = 0;
+ 
+   printf(1, "fsfull test\n");
+ 
+-  for(nfiles = 0; ; nfiles++){
++  for (nfiles = 0;; nfiles++)
++  {
+     char name[64];
+     name[0] = 'f';
+     name[1] = '0' + nfiles / 1000;
+@@ -1661,26 +1895,29 @@ fsfull()
+     name[4] = '0' + (nfiles % 10);
+     name[5] = '\0';
+     printf(1, "writing %s\n", name);
+-    int fd = open(name, O_CREATE|O_RDWR);
+-    if(fd < 0){
++    int fd = open(name, O_CREATE | O_RDWR);
++    if (fd < 0)
++    {
+       printf(1, "open %s failed\n", name);
+       break;
+     }
+     int total = 0;
+-    while(1){
++    while (1)
++    {
+       int cc = write(fd, buf, 512);
+-      if(cc < 512)
++      if (cc < 512)
+         break;
+       total += cc;
+       fsblocks++;
+     }
+     printf(1, "wrote %d bytes\n", total);
+     close(fd);
+-    if(total == 0)
++    if (total == 0)
+       break;
+   }
+ 
+-  while(nfiles >= 0){
++  while (nfiles >= 0)
++  {
+     char name[64];
+     name[0] = 'f';
+     name[1] = '0' + nfiles / 1000;
+@@ -1695,11 +1932,10 @@ fsfull()
+   printf(1, "fsfull test finished\n");
+ }
+ 
+-void
+-uio()
++void uio()
+ {
+-  #define RTC_ADDR 0x70
+-  #define RTC_DATA 0x71
++#define RTC_ADDR 0x70
++#define RTC_DATA 0x71
+ 
+   ushort port = 0;
+   uchar val = 0;
+@@ -1707,17 +1943,22 @@ uio()
+ 
+   printf(1, "uio test\n");
+   pid = fork();
+-  if(pid == 0){
++  if (pid == 0)
++  {
+     port = RTC_ADDR;
+-    val = 0x09;  /* year */
++    val = 0x09; /* year */
+     /* http://wiki.osdev.org/Inline_Assembly/Examples */
+-    asm volatile("outb %0,%1"::"a"(val), "d" (port));
++    asm volatile("outb %0,%1" ::"a"(val), "d"(port));
+     port = RTC_DATA;
+-    asm volatile("inb %1,%0" : "=a" (val) : "d" (port));
++    asm volatile("inb %1,%0"
++                 : "=a"(val)
++                 : "d"(port));
+     printf(1, "uio: uio succeeded; test FAILED\n");
+     exit();
+-  } else if(pid < 0){
+-    printf (1, "fork failed\n");
++  }
++  else if (pid < 0)
++  {
++    printf(1, "fork failed\n");
+     exit();
+   }
+   wait();
+@@ -1728,7 +1969,8 @@ void argptest()
+ {
+   int fd;
+   fd = open("init", O_RDONLY);
+-  if (fd < 0) {
++  if (fd < 0)
++  {
+     printf(2, "open failed\n");
+     exit();
+   }
+@@ -1745,12 +1987,12 @@ rand()
+   return randstate;
+ }
+ 
+-int
+-main(int argc, char *argv[])
++int main(int argc, char *argv[])
+ {
+   printf(1, "usertests starting\n");
+ 
+-  if(open("usertests.ran", 0) >= 0){
++  if (open("usertests.ran", 0) >= 0)
++  {
+     printf(1, "already ran user tests -- rebuild fs.img\n");
+     exit();
+   }
+@@ -1793,7 +2035,7 @@ main(int argc, char *argv[])
+   dirfile();
+   iref();
+   forktest();
+-  bigdir(); // slow
++  // bigdir(); // slow
+ 
+   uio();
+ 
 diff --git a/vm.c b/vm.c
-index 7134cff..bf00b78 100644
+index 7134cff..5cc5e39 100644
 --- a/vm.c
 +++ b/vm.c
 @@ -7,13 +7,12 @@
@@ -1084,7 +4327,7 @@ index 7134cff..bf00b78 100644
        return -1;
    }
    return 0;
-@@ -218,27 +219,29 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
+@@ -218,32 +219,51 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
  
  // Allocate page tables and physical memory to grow process from oldsz to
  // newsz, which need not be page aligned.  Returns new size or 0 on error.
@@ -1102,6 +4345,9 @@ index 7134cff..bf00b78 100644
 +  if (newsz < oldsz)
      return oldsz;
  
++  // added by sayem
++  struct proc *p = myproc();
++
    a = PGROUNDUP(oldsz);
 -  for(; a < newsz; a += PGSIZE){
 +  for (; a < newsz; a += PGSIZE)
@@ -1116,12 +4362,31 @@ index 7134cff..bf00b78 100644
      }
      memset(mem, 0, PGSIZE);
 -    if(mappages(pgdir, (char*)a, PGSIZE, V2P(mem), PTE_W|PTE_U) < 0){
++
++    // added by sayem
++    if (notInitProcess(p))
++    {
++      // cprintf("\nold size : %d, new size : %d\n", oldsz, newsz);
++      checkToSwapOut(pgdir, p);
++    }
++
 +    if (mappages(pgdir, (char *)a, PGSIZE, V2P(mem), PTE_W | PTE_U) < 0)
 +    {
        cprintf("allocuvm out of memory (2)\n");
        deallocuvm(pgdir, newsz, oldsz);
        kfree(mem);
-@@ -252,23 +255,24 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
+       return 0;
+     }
++
++    // added by sayem
++    if (notInitProcess(p))
++    {
++      EnqueuePage(pgdir, p, a);
++    }
+   }
+   return newsz;
+ }
+@@ -252,26 +272,33 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
  // newsz.  oldsz and newsz need not be page-aligned, nor does newsz
  // need to be less than oldsz.  oldsz can be larger than the actual
  // process size.  Returns the new process size.
@@ -1154,7 +4419,16 @@ index 7134cff..bf00b78 100644
          panic("kfree");
        char *v = P2V(pa);
        kfree(v);
-@@ -280,39 +284,39 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
++
++      if (notInitProcess(myproc()) && !(myproc()->isItinExec))
++      {
++        deleteFromMemory(myproc(), pgdir, a);
++      }
++
+       *pte = 0;
+     }
+   }
+@@ -280,62 +307,84 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
  
  // Free a page table and all the physical memory pages
  // in the user part.
@@ -1201,11 +4475,12 @@ index 7134cff..bf00b78 100644
  // Given a parent process's page table, create a copy
  // of it for a child.
 -pde_t*
+-copyuvm(pde_t *pgdir, uint sz)
 +pde_t *
- copyuvm(pde_t *pgdir, uint sz)
++copyuvm(pde_t *pgdir, uint sz, struct proc *child_p) // added by sayem : , struct proc *child_p
  {
    pde_t *d;
-@@ -320,19 +324,21 @@ copyuvm(pde_t *pgdir, uint sz)
+   pte_t *pte;
    uint pa, i, flags;
    char *mem;
  
@@ -1216,11 +4491,18 @@ index 7134cff..bf00b78 100644
 -    if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
 +  for (i = 0; i < sz; i += PGSIZE)
 +  {
++  checkEntry:
 +    if ((pte = walkpgdir(pgdir, (void *)i, 0)) == 0)
        panic("copyuvm: pte should exist");
 -    if(!(*pte & PTE_P))
-+    if (!(*pte & PTE_P))
++    if (!((*pte & PTE_P) || (*pte & PTE_PG))) // added by sayem: || (!(*pte & PTE_PG))
        panic("copyuvm: page not present");
++    // added
++    if (*pte & PTE_PG)
++    {
++      swap_in_page(i, myproc());
++      goto checkEntry;
++    }
      pa = PTE_ADDR(*pte);
      flags = PTE_FLAGS(*pte);
 -    if((mem = kalloc()) == 0)
@@ -1229,12 +4511,28 @@ index 7134cff..bf00b78 100644
 -    memmove(mem, (char*)P2V(pa), PGSIZE);
 -    if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0) {
 +    memmove(mem, (char *)P2V(pa), PGSIZE);
++
++    // added by sayem
++    if (myproc() != 0 && notInitProcess(myproc()))
++    {
++      checkToSwapOut(d, child_p);
++    }
++
 +    if (mappages(d, (void *)i, PGSIZE, V2P(mem), flags) < 0)
 +    {
        kfree(mem);
        goto bad;
      }
-@@ -344,38 +350,38 @@ bad:
++
++    // added by sayem
++    if (myproc() != 0 && notInitProcess(myproc()))
++    {
++      EnqueuePage(d, child_p, i);
++    }
+   }
+   return d;
+ 
+@@ -344,38 +393,38 @@ bad:
    return 0;
  }
  
@@ -1286,7 +4584,7 @@ index 7134cff..bf00b78 100644
        n = len;
      memmove(pa0 + (va - va0), buf, n);
      len -= n;
-@@ -385,10 +391,9 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
+@@ -385,10 +434,366 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
    return 0;
  }
  
@@ -1296,10 +4594,367 @@ index 7134cff..bf00b78 100644
 -// Blank page.
 -//PAGEBREAK!
 -// Blank page.
--
 +// PAGEBREAK!
 +//  Blank page.
 +// PAGEBREAK!
 +//  Blank page.
 +// PAGEBREAK!
 +//  Blank page.
++
++// added by sayem
++// do all the works from here
++int checkToSwapOut(pde_t *pgdir, struct proc *p)
++{
++  // cprintf("pid : %d, name : %s, page count : %d\n", p->pid, p->name, p->pageCount);
++
++  if (p->pagesInMemoryCount + p->pageSwapedOutCount <= MAX_TOTAL_PAGES)
++  {
++    // MAX_PSYC_PAGES hobe 10 er jaigay
++    if (p->pagesInMemoryCount >= MAX_PSYC_PAGES)
++    {
++      cprintf("\nNEED TO SWAP OUT PAGE!!\n");
++      cprintf("#PAGES IN MEMORY : %d\t #PAGES IN SWAP FILE : %d\n", p->pagesInMemoryCount, p->pageSwapedOutCount);
++      swapOutPage(pgdir, p);
++    }
++    // cprintf("added to queue\n");
++    return 0;
++  }
++  else
++  {
++    if (PRINT_VERBOSE)
++      cprintf("!!!!!!!!!!exceeds page limits!!!!!!!!!!!!!!!!!\n");
++    return -1;
++  }
++}
++
++int EnqueuePage(pde_t *pgdir, struct proc *p, uint va)
++{
++  if (PRINT_VERBOSE)
++  {
++    cprintf("new page allocated : pn : %p\n", va >> 12);
++    cprintf("previous page count : %d, in memory count : %d, swap count : %d\n", p->pagesInMemoryCount + p->pageSwapedOutCount, p->pagesInMemoryCount, p->pageSwapedOutCount);
++  }
++  if (p->pagesInMemoryCount != MAX_PSYC_PAGES)
++  {
++    enqueue(pgdir, p, va);
++  }
++  return 1;
++}
++
++// for FIFO/Queue
++// push to queue
++void enqueue(pde_t *pgdir, struct proc *p, uint va)
++{
++  p->pagesInMemory[p->pagesInMemoryCount].isValidData = 1;
++  p->pagesInMemory[p->pagesInMemoryCount].va = va;
++  // cprintf("%d --> %d\n", p->pagesInMemoryCount, va);
++  pte_t *pte = walkpgdir(pgdir, (int *)va, 0);
++  p->pagesInMemory[p->pagesInMemoryCount].pte = pte;
++  p->pagesInMemory[p->pagesInMemoryCount].counter = 0;
++  // cprintf("%p --> %p\n", pte, PTE_ADDR(*pte));
++  p->pagesInMemoryCount++;
++  cprintf("New page added to memory. page count : %d  page number : %p\n", p->pagesInMemoryCount, va >> 12);
++}
++
++// select which page will be swapped out from Memory
++int removePageIndex(struct proc *p)
++{
++  // for queue, it will be 1st index
++  int idx = 0;
++  if (NFU_ALGO)
++  {
++    int min = __INT_MAX__;
++    for (int i = 0; i < MAX_PSYC_PAGES; i++)
++    {
++      if (p->pagesInMemory[i].isValidData)
++      {
++        if (PRINT_VERBOSE)
++          cprintf("here:  index : %d pn : %p counter : %d \n", i, p->pagesInMemory[i].va >> 12, p->pagesInMemory[i].counter);
++        if (p->pagesInMemory[i].counter < min)
++        {
++          // cprintf("check check!!!!!!!!!!!!!!!\n");
++          min = p->pagesInMemory[i].counter;
++          idx = i;
++        }
++      }
++    }
++    if (PRINT_VERBOSE)
++      cprintf("FOR NFU ALGO dequeue  index : %d pn : %p counter : %d \n", idx, p->pagesInMemory[idx].va >> 12, p->pagesInMemory[idx].counter);
++  }
++  return idx;
++}
++
++// find available index in swapDetails array
++int findswapArrayIndex(struct proc *p)
++{
++  int idx = -1;
++  for (int i = 0; i < MAX_TOTAL_PAGES; i++)
++  {
++    if (p->swapDetails[i].isValidData == 0)
++    {
++      idx = i;
++      break;
++    }
++  }
++  return idx;
++}
++
++// add to swap file
++int addToSwapFile(pde_t *pgdir, struct proc *p, int index)
++{
++  int swapFileIndex = findswapArrayIndex(p);
++  if (swapFileIndex == -1)
++  {
++    cprintf("invalid swap file index. swap file full.\n");
++    return -1;
++  }
++
++  uint offset = PGSIZE * swapFileIndex;
++
++  pte_t *pte;
++
++  pte = p->pagesInMemory[index].pte;
++  uint pa = PTE_ADDR(*pte);
++  char *ka = P2V(pa);
++
++  if (PRINT_VERBOSE)
++  {
++    cprintf("pn : %p\n", p->pagesInMemory[index].va >> 12);
++    cprintf("\noffset : %d, index : %d, va: %d ka : %p\n", offset, swapFileIndex, p->pagesInMemory[index].va, ka);
++  }
+ 
++  int addStatus = writeToSwapFile(p, ka, offset, PGSIZE);
++
++  if (addStatus != -1) // successfully added in swap file
++  {
++    cprintf("Successfully written to swap file.\n");
++    p->pageSwapedOutCount++;
++    if (PRINT_VERBOSE)
++      cprintf("swap count : %d, offset : %d, va : %d\n", p->pageSwapedOutCount, offset, p->pagesInMemory[index].va);
++    p->swapDetails[swapFileIndex].isValidData = 1;
++    p->swapDetails[swapFileIndex].va = p->pagesInMemory[index].va;
++    p->swapDetails[swapFileIndex].offsetIdx = swapFileIndex;
++    p->swapDetails[swapFileIndex].pte = p->pagesInMemory[index].pte;
++    p->swapDetails[swapFileIndex].counter = p->pagesInMemory[index].counter;
++  }
++  else
++  {
++    cprintf("addToSwapFile: can not write to swap file\n");
++  }
++  // kfree(ka);
++  return addStatus;
++}
++
++// remove from Memory (pagesInMemory array)
++// pop from queue
++int dequeue(pde_t *pgdir, struct proc *p, int index)
++{
++  if (index >= p->pagesInMemoryCount || index < 0 || index >= MAX_PSYC_PAGES)
++  {
++    cprintf("dequeue: invalid index. can not remove page from memory\n");
++    return -1;
++  }
++
++  if (p->pagesInMemory[index].isValidData)
++  {
++    // add to swap file and remove from memory
++    if (addToSwapFile(pgdir, p, index) != -1)
++    {
++      // successfully added to swap file
++      // remove from memory and rearrange memeory
++      for (int i = index; i < p->pagesInMemoryCount - 1; i++)
++      {
++        p->pagesInMemory[i].isValidData = p->pagesInMemory[i + 1].isValidData;
++        p->pagesInMemory[i].offsetIdx = p->pagesInMemory[i + 1].offsetIdx;
++        p->pagesInMemory[i].va = p->pagesInMemory[i + 1].va;
++        p->pagesInMemory[i].pte = p->pagesInMemory[i + 1].pte;
++        p->pagesInMemory[i].counter = p->pagesInMemory[i + 1].counter;
++      }
++
++      p->pagesInMemory[p->pagesInMemoryCount - 1].isValidData = 0;
++      p->pagesInMemory[p->pagesInMemoryCount - 1].va = fakeAddr;
++      p->pagesInMemory[p->pagesInMemoryCount - 1].offsetIdx = fakeAddr;
++      p->pagesInMemory[p->pagesInMemoryCount - 1].pte = 0;
++      p->pagesInMemory[p->pagesInMemoryCount - 1].counter = 0;
++
++      p->pagesInMemoryCount--; // decrease count
++
++      return 0;
++    }
++    else
++      return -1;
++  }
++
++  else
++  {
++    cprintf("dequeue: Not valid data here");
++    return -1;
++  }
++}
++
++// swap out page from memory
++int swapOutPage(pde_t *pgdir, struct proc *p)
++{
++  int index = 0;
++  index = removePageIndex(p); // for queue : 0
++  int removeStatus = -1;
++
++  pte_t *pte;
++
++  pte = p->pagesInMemory[index].pte;
++
++  // cprintf("pte : %p\n", pte);
++  if (pte == 0)
++  {
++    panic("swapOutPage: pte should be exist");
++  }
++
++  if (*pte & PTE_P)
++  {
++    cprintf("dequeue index : %d, page number : %p\n", index, p->pagesInMemory[index].va >> 12);
++    removeStatus = dequeue(pgdir, p, index);
++
++    if (removeStatus == -1)
++    {
++      cprintf("swapOutPage: can not swap out any page\n");
++    }
++    else
++    {
++      *pte |= PTE_PG;
++      *pte &= ~PTE_P;
++
++      // cprintf("flags updated here\n");
++
++      uint pa = PTE_ADDR(*pte);
++      // cprintf("pa : %d\n", pa);
++      if (pa == 0)
++        panic("kfree");
++      char *v = P2V(pa);
++      kfree(v);
++
++      // check later
++      //  lcr3(V2P(p->pgdir));
++    }
++  }
++  else
++  {
++    panic("swapOutPage: page not present");
++  }
++
++  return removeStatus;
++}
++
++int swap_in_page(uint va, struct proc *p)
++{
++  uint off;
++  char *mem;
++  // cprintf("here i am\n");
++  pte_t *pte;
++  int i, found;
++  found = 0;
++  pte = walkpgdir(p->pgdir, (char *)va, 0);
++
++  uint vad = PGROUNDDOWN(va);
++  for (i = 0; i < MAX_TOTAL_PAGES; i++)
++  {
++    if (p->swapDetails[i].isValidData)
++    {
++      // cprintf("va : %d ", p->swapDetails[i].va);
++      if (p->swapDetails[i].va == vad)
++      {
++        pte = p->swapDetails[i].pte;
++        if (*pte & PTE_PG)
++        {
++          // soft miss
++          if (PRINT_VERBOSE)
++          {
++            cprintf("pid : %d\n", p->pid);
++            cprintf("soft miss vad : %d pte : %p pn: %p\n", vad, pte, vad >> 12);
++          }
++          mem = kalloc();
++          if (mem == 0)
++          {
++            cprintf("swap_in_page: out of memory\n");
++            return 0;
++          }
++          memset(mem, 0, PGSIZE);
++          off = p->swapDetails[i].offsetIdx;
++          off = off * PGSIZE;
++
++          int readStatus = readFromSwapFile(p, mem, off, PGSIZE);
++          // cprintf("soft miss read from swap file done\n");
++          if (readStatus == -1)
++          {
++            cprintf("swap_in_page: read from swap file error\n");
++          }
++
++          checkToSwapOut(p->pgdir, p);
++
++          uint flags = PTE_FLAGS(*pte);
++          flags &= ~PTE_PG;
++
++          if (mappages(p->pgdir, (char *)vad, PGSIZE, V2P(mem), flags) < 0)
++          {
++            cprintf("out of memory in swap in page\n");
++            kfree(mem);
++            return 0;
++          }
++
++          // update swap details
++          p->swapDetails[i].isValidData = 0;
++          p->pageSwapedOutCount--; // decrease swap count
++
++          // cprintf("soft miss mapping done\n");
++          if (EnqueuePage(p->pgdir, p, vad) != -1)
++            cprintf("Successfully swapped in to memory\n\n");
++          else
++            cprintf("swap_in_page: !!!!!!!!!!!unsuccessful swapped in to memory!!!!!!!");
++        }
++        found = 1;
++        break;
++      }
++    }
++  }
++  if (!found && PRINT_VERBOSE)
++  {
++    cprintf("present bit : %d user bit : %d pg : %d\n", *pte & PTE_P, *pte & PTE_U, *pte & PTE_PG);
++    cprintf("pte : %p ==== %d\n", pte, pte);
++    cprintf("page fault miss va : %d pn: %p\n", va, va >> 12);
++    // cprintf("pid : %d pn : %p\n", p->pid, va >> 12);
++    cprintf("swap in page : !!!!!!!!!!!!!!!!!Something WRONG!!!!!!!!!!!!!!!!!\n");
++    cprintf("swapping in page to memory va: %d down : %d  up : %d\n", va, PGROUNDDOWN(va), PGROUNDUP(va));
++    cprintf("hard miss\n");
++    return -1;
++  }
++  return 1;
++}
++
++void deleteFromMemory(struct proc *p, pde_t *pgdir, uint va)
++{
++  for (int j = 0; j < MAX_PSYC_PAGES; j++)
++  {
++    if (p->pagesInMemory[j].isValidData)
++    {
++      if (p->pagesInMemory[j].va == va)
++      {
++        for (int i = j; i < p->pagesInMemoryCount - 1; i++)
++        {
++          p->pagesInMemory[i].isValidData = p->pagesInMemory[i + 1].isValidData;
++          p->pagesInMemory[i].offsetIdx = p->pagesInMemory[i + 1].offsetIdx;
++          p->pagesInMemory[i].va = p->pagesInMemory[i + 1].va;
++          p->pagesInMemory[i].pte = p->pagesInMemory[i + 1].pte;
++          p->pagesInMemory[i].counter = p->pagesInMemory[i + 1].counter;
++        }
++
++        p->pagesInMemory[p->pagesInMemoryCount - 1].isValidData = 0;
++        p->pagesInMemory[p->pagesInMemoryCount - 1].va = fakeAddr;
++        p->pagesInMemory[p->pagesInMemoryCount - 1].offsetIdx = fakeAddr;
++        p->pagesInMemory[p->pagesInMemoryCount - 1].pte = 0;
++        p->pagesInMemory[p->pagesInMemoryCount - 1].counter = 0;
++
++        p->pagesInMemoryCount--; // decrease count
++      }
++    }
++  }
++}
+\ No newline at end of file
