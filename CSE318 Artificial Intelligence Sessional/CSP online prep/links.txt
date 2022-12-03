@@ -1,0 +1,2 @@
+https://choco-solver.org/docs/modeling/
+https://choco-solver.org/docs/modeling/intconstraints/

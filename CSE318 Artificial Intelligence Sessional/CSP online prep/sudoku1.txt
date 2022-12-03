@@ -1,0 +1,83 @@
+import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.variables.IntVar;
+public class Sudoku {
+public static void main(String[] args) {
+int i, j, k;
+// 1. Create a Model
+Model model = new Model("my first sudoku problem");
+// 2. Create variables
+/* the board which is 9 X 9 */
+/* (0, 0) is the top left position and (8, 8) is the bottom right position */
+/*each cell is an integer variable taking their value in [1, 9] */
+IntVar[][] bd = model.intVarMatrix("bd", 9, 9, 1, 9);
+/* the nine rows *//* each row is an array of 9 integer variables taking their value in [1, 9] */
+// 3. Post constraints
+/* post constraints for the given hints or clues */
+model.arithm (bd[0][2], "=", 2).post();
+model.arithm (bd[1][1], "=", 8).post();
+model.arithm (bd[1][4], "=", 3).post();
+model.arithm (bd[1][7], "=", 7).post();
+model.arithm (bd[2][0], "=", 3).post();
+model.arithm (bd[2][3], "=", 5).post();
+model.arithm (bd[2][5], "=", 4).post();
+model.arithm (bd[3][7], "=", 2).post();
+model.arithm (bd[3][8], "=", 8).post();
+model.arithm (bd[4][0], "=", 8).post();
+model.arithm (bd[4][1], "=", 3).post();
+model.arithm (bd[4][4], "=", 1).post();
+model.arithm (bd[5][1], "=", 4).post();
+model.arithm (bd[5][3], "=", 7).post();
+model.arithm (bd[5][6], "=", 3).post();
+model.arithm (bd[5][7], "=", 5).post();
+model.arithm (bd[5][8], "=", 1).post();
+model.arithm (bd[6][1], "=", 7).post();
+model.arithm (bd[6][4], "=", 5).post();
+model.arithm (bd[6][5], "=", 6).post();
+model.arithm (bd[6][8], "=", 4).post();
+model.arithm (bd[7][2], "=", 3).post();
+model.arithm (bd[8][2], "=", 5).post();
+model.arithm (bd[8][3], "=", 4).post();
+model.arithm (bd[8][5], "=", 1).post();
+model.arithm (bd[8][6], "=", 6).post();/* for the nine box variables */
+/* each box variable is associated with appropriate cell positions in board */
+/* for example, b0 [0] is equal to board [0][0] and b0 [8] is equal to board [3][3] */
+/* b1 [0] is equal to board [0][3] and b1 [8] is equal to board [2][5] */
+/* b2 [0] is equal to board [0][6] and b2 [8] is equal to board [2][8] */
+/* Continuing in this way, b8 [8] is equal to board [8][8] */
+
+/* post global constraint alldiff for the nine rows */
+for(i=0;i<9;i++){
+    model.allDifferent(new IntVar[]{bb[i][0],bb[i][1],bb[i][2],bb[i][3],bb[i][4],bb[i][5],bb[i][6],bb[i][7],bb[i][9]}).post();
+}
+
+
+for(i=0;i<9;i++){
+    model.allDifferent(new IntVar[]{bb[0][i],bb[1][i],bb[2][i],bb[3][i],bb[4][i],bb[5][i],bb[6][i],bb[7][i],bb[8][i]}).post();
+}
+
+
+for(i=0;i<9;i++){
+    for(j=0;j<9;j++){
+        model.allDifferent(bb[i][])
+    }
+}
+
+
+Solver solver = model.getSolver();
+solver.showStatistics();
+solver.showSolutions();
+solver.findSolution();
+// 5. Print the solution
+for ( i = 0; i < 9; i++)
+{
+    for ( j = 0; j < 9; j++)
+    {
+        System.out.print(" ");/* get the value for the board position [i][j] for the solved board */
+        k = bd [i][j].getValue();
+        System.out.print(k );
+    }
+    System.out.println();
+}
+}
+}
